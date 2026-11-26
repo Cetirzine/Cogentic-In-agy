@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8').replace(/\r\n/g, '\n');
 
 // Minimal YAML frontmatter reader for the shapes this plugin uses (scalars, inline and block lists).
 function frontmatter(text) {
@@ -86,7 +86,7 @@ test('skills: frontmatter, names match folders, relative links resolve', () => {
   const skills = path.join(root, 'skills');
   for (const name of fs.readdirSync(skills)) {
     const file = path.join(skills, name, 'SKILL.md');
-    const text = fs.readFileSync(file, 'utf8');
+    const text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
     const fm = frontmatter(text);
     assert.equal(fm.name, name, `${name}: frontmatter name matches the folder`);
     assert.ok(fm.description && fm.description.length > 40, `${name}: description`);
