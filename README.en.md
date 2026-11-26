@@ -68,8 +68,9 @@ The installer picks the method by itself:
 In the desktop app, type `/cogentic <problem>`. If the conversation has no swarm tools, open a new
 conversation with `/swarm` and say `use the cogentic skill on: <problem>`, or use
 `--mode workflow`. In **Plan/Execute** (planner + executor) conversations, the orchestrator first
-asks you to approve a run plan. Workflow agents run as the plugin's `cogentic-worker` agent type,
-so the main conversation's plan reviews cannot block them.
+asks you to approve a run plan. Workflow agents run as the plugin's `cogentic-worker` subagent on an
+explicit `pro` tier, never on the conversation's planner + executor model. If they are blocked
+anyway, the run halts after 3 consecutive failures and says why, instead of spinning.
 
 ## Use
 
@@ -91,7 +92,7 @@ advisor's instructions, and `final/manuscript.md`.
 ## Development
 
 ```bash
-node --test tests/engine.test.cjs tests/install.test.cjs
+node --test tests/engine.test.cjs tests/install.test.cjs tests/plugin.test.cjs
 ```
 
 ```bash

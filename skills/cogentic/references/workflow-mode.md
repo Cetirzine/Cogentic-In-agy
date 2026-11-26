@@ -2,19 +2,29 @@
 
 Use workflow mode when the swarm tools (`swarm`, `post_message`, `read_board`, `swarm_wait`) are
 not available, or when the user asked for `--mode workflow`. It runs the same protocol through
-Antigravity's built-in `run_workflow` engine. Each agent appears as a card in the workflow step,
-in place of the swarm board. It works in both the Antigravity desktop app and the `agy` CLI.
+Antigravity's built-in `run_workflow` engine, in both the desktop app and the `agy` CLI. Each
+agent appears as a card in the workflow step, in place of the swarm board.
 
-**Agent type.** The script starts every agent as the plugin's `cogentic-worker` agent type, not
-`self`. A `self` agent would inherit this conversation's configuration, including a Plan/Execute
-mode whose plan reviews block a workflow agent's tools and `finish`. If the host does not know
-`cogentic-worker`, the script falls back to `self` and logs it.
+## How the script starts agents
 
-**Models.** Workflow agents can only choose a model tier, so every agent inherits this
-conversation's model, and you cannot choose models per role. Check the conversation's model
-against [model-selection.md](model-selection.md): it should be one of the strongest models in the
-`/model` list. If it is not, suggest a switch to the user. Tell the user in one line that per-role
-model choice is only available in swarm mode.
+- **Agent type.** Every agent is the plugin's `cogentic-worker` subagent
+  (`agents/cogentic-worker.md`: `subagent: true`). Its tool list holds only documented tool
+  names, plus `call_mcp_tool` for the Cogentic MCP tools.
+- **Model.** Every agent runs on an explicit `run_workflow` tier: `pro` by default, falling back
+  to `flash` and then `flash_lite` if a tier is unavailable. It never inherits the conversation's
+  model, because under the Orchestrator (planner + executor) model that would also bring the
+  conversation's plan reviews into every agent and block their tools and `finish`. Pass
+  `model_tier: "inherit"` only if the user asks for it and the conversation runs on a single
+  concrete model.
+- **No silent fallback to `self`.** If the host cannot resolve `cogentic-worker`, the run halts
+  with a diagnosis. Rerun with `allow_self_fallback: true` only in a conversation that is not
+  on the Orchestrator model and not in plan mode.
+- **Fail fast.** An agent that errors, times out (`agent_timeout_s`, default 90 minutes), or
+  finishes without recording its output counts as a failure. After
+  `max_consecutive_failures` failures in a row (default 3), the run halts with a diagnosis
+  instead of burning quota. The state stays intact, so a rerun with the same `run_dir` resumes it.
+
+Per-role model choice is only available in swarm mode. Tell the user this in one line.
 
 ## Steps
 
@@ -33,9 +43,10 @@ model choice is only available in swarm mode.
    This skill's directory is the folder that holds this `SKILL.md`. The `cogentic-roles` skill sits
    next to it, under the plugin's `skills/` folder. A global install puts it at
    `~/.gemini/config/plugins/cogentic/skills/`. If you leave `roles_dir` out, the script looks
-   there and in the workspace's `.agents/plugins/`.
+   there and in the workspace's `.agents/plugins/`. Further optional Args are documented at the top
+   of the script.
 4. The workflow runs in the background, and you are notified when it ends. In the meantime you can
    answer the user from `cogentic_status`.
-5. When it ends, report as in §6 of the main skill. If it failed partway, `cogentic_status` shows
-   where it stopped. The state is intact, so start the workflow again with the same `run_dir`:
-   the script continues from the current phase.
+5. When it ends, its output is either the result or `{"halted": <diagnosis>}`. Report the result as
+   in §6 of the main skill, or tell the user the diagnosis and what would fix it. The state is
+   intact, so rerunning the workflow with the same `run_dir` resumes from the current phase.

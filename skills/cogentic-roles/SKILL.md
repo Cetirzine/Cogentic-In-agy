@@ -34,7 +34,14 @@ Your brief names your role, a `run_dir` and your assignment. Read your role file
   `rounds/r<n>/` holds briefings, drafts and verdicts. Open what you need, by path. Do not ask
   for it to be pasted to you.
 - **Record your output only through your role's `cogentic_*` tool.** Its error messages are
-  protocol rules. Read them and fix your call; do not work around them.
+  protocol rules. Read them and fix your call; do not work around them. The tools belong to the
+  plugin's MCP server `cogentic_cogentic`. Call one directly if it is in your tool list (for
+  example `mcp_cogentic_cogentic_cogentic_submit_draft`). Otherwise use `call_mcp_tool` with
+  `ServerName: "cogentic_cogentic"`, `ToolName` (for example `cogentic_submit_draft`) and
+  `Arguments`.
+- **Never wait for approval.** Nobody can answer you during a run. Do not write an implementation
+  plan for review. If a tool is blocked, finish your turn at once and say why in one line, instead
+  of retrying it.
 - **The board is for one line only.** When you are done, post `@coordinator [done] <one line>` and
   nothing more. Never paste mathematics into the board. Do not read other members' work unless
   your role file tells you to.

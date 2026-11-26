@@ -47,6 +47,7 @@ class World:
     def __init__(self, run, crash_after=None):
         self.run, self.calls, self.crash_after = run, [], crash_after
         self.plans = 0
+        self.silent_roles = ()
 
     def st(self):
         return json.loads(engine("cogentic_status", run_dir=self.run))
@@ -64,6 +65,8 @@ class World:
                 return engine(name, **kw)
             except ToolError as e:
                 return "ERROR: " + e.message
+        if any(role.startswith(r) for r in self.silent_roles):
+            return "done"  # claims success, records nothing
         m = re.search(r"Assignment: (.*)", prompt)
         assignment = m.group(1) if m else ""
         sid = assignment.replace("slot ", "").strip()
@@ -113,27 +116,40 @@ class World:
         return "done"
 
 
-async def run_script(world, with_call_tool=True, known_types=("self", "cogentic-worker"), call_tool_reaches=True):
-    world.types = []
+async def run_script(world, with_call_tool=True, known_types=("self", "cogentic-worker"), call_tool_reaches=True,
+                     extra_args=None, tiers=("pro", "flash", "flash_lite", "inherit"), hang_roles=(), fail_roles=()):
+    """Runs the workflow script with fake run_workflow primitives; returns the script's `result`."""
+    world.types, world.models = [], []
 
     def agent(prompt=None, schema=None, role=None, type_name="self", workspace="inherit", model=None):
-        assert model == "inherit", "workflow agents can only inherit the conversation's model"
-        if type_name not in known_types:
-            async def unknown():
-                raise ToolError(f"unknown agent type {type_name!r}")
-            return unknown()
+        async def refuse(msg):
+            raise ToolError(msg)
+        if type_name not in known_types:  # what Antigravity said when the worker was not a subagent
+            return refuse(f'failed to resolve agent "{type_name}": subagent "{type_name}" not found or not allowed to be invoked')
+        if model not in tiers:
+            return refuse(f"model tier {model!r} is not available; valid choices: {', '.join(tiers)}")
+        if any(role.startswith(r) for r in fail_roles):
+            world.calls.append(role)
+            return refuse("the agent ended without calling finish")
+        if any(role.startswith(r) for r in hang_roles):
+            world.calls.append(role)
+            async def hang():
+                await asyncio.sleep(3600)
+            return hang()
         world.types.append(type_name)
+        world.models.append(model)
         return world.act(prompt, role)
 
     async def parallel(items, fn):
         return await asyncio.gather(*[fn(i) for i in items])
 
     g = {
-        "args": {"run_dir": world.run, "roles_dir": os.path.join(ROOT, "skills", "cogentic-roles", "roles")},
+        "args": {"run_dir": world.run, "roles_dir": os.path.join(ROOT, "skills", "cogentic-roles", "roles"), **(extra_args or {})},
         "agent": agent, "parallel": parallel,
-        "phase": lambda name: None, "log": lambda *a: None,
+        "phase": lambda name: None, "log": lambda *a: world.logs.append(" ".join(map(str, a))),
         "ToolError": ToolError, "__name__": "__workflow__",
     }
+    world.logs = []
     if with_call_tool:
         async def call_tool(name, **kw):
             if not call_tool_reaches:  # e.g. the host namespaces plugin MCP tools differently
@@ -144,6 +160,7 @@ async def run_script(world, with_call_tool=True, known_types=("self", "cogentic-
     coro = eval(code, g)
     if coro is not None:
         await coro
+    return g.get("result")
 
 
 def check_done(world):
@@ -191,12 +208,28 @@ def main():
     assert len(lit) == 2, lit
     print("ok: resume after crash; literature not repeated")
 
-    # 4. host without the plugin's custom agent type: falls back to "self" and still finishes
+    # 4. host cannot resolve the custom agent type (the live failure: subagent: false). It must not silently
+    #    fall back to "self" (which inherits Plan/Execute plan reviews): the run halts with a diagnosis...
     w = World(new_run())
-    asyncio.run(run_script(w, known_types=("self",)))
+    res = asyncio.run(run_script(w, known_types=("self",)))
+    assert "halted" in res and "cogentic-worker" in res["halted"], res
+    assert w.types == [], "no agent may run as self without permission"
+    #    ...and only with allow_self_fallback does it run as self, and finish
+    w = World(new_run())
+    asyncio.run(run_script(w, known_types=("self",), extra_args={"allow_self_fallback": True}))
     check_done(w)
     assert set(w.types) == {"self"}
-    print("ok: falls back to type self when cogentic-worker is unknown")
+    print("ok: unresolved worker type halts with a diagnosis; self only when allowed")
+
+    # 4b. agents never inherit the conversation's model (it may be the Orchestrator planner+executor) unless asked
+    w = World(new_run())
+    asyncio.run(run_script(w))
+    assert set(w.models) == {"pro"}, set(w.models)
+    w = World(new_run())
+    asyncio.run(run_script(w, tiers=("flash", "flash_lite", "inherit")))
+    check_done(w)
+    assert set(w.models) == {"flash"}, set(w.models)
+    print("ok: explicit model tier (pro), falling back to flash when pro is unavailable")
 
     # 5. call_tool exists but cannot reach the plugin's tools: clerk agents take over
     w = World(new_run())
@@ -215,6 +248,37 @@ def main():
     except ToolError as e:
         assert "[cogentic]" in e.message, e.message
     print("ok: engine errors carry the [cogentic] marker")
+
+
+
+
+    # 7. agents that keep failing (e.g. blocked tools, no finish) halt the run instead of spinning
+    w = World(new_run())
+    res = asyncio.run(run_script(w, fail_roles=("Literature", "Orchestrator")))
+    assert "halted" in res, res
+    assert len(w.calls) <= 4, w.calls
+    print("ok: consecutive failures halt the run after", len(w.calls), "agents")
+
+    # 8. the orchestrator fails at the start: no literature reviewers are launched
+    w = World(new_run())
+    res = asyncio.run(run_script(w, fail_roles=("Orchestrator",), extra_args={"max_consecutive_failures": 5}))
+    assert "halted" in res and not any(c.startswith("Literature") for c in w.calls), (res, w.calls)
+    print("ok: a failed start launches nothing")
+
+    # 9. a hung agent times out and counts as a failure
+    w = World(new_run())
+    res = asyncio.run(run_script(w, hang_roles=("Literature",), extra_args={"agent_timeout_s": 0.2}))
+    assert "halted" in res, res
+    print("ok: hung agents time out")
+
+    # 10. an agent that finishes without recording its output is a failure, not progress
+    w = World(new_run())
+    w.silent_roles = ("Prover",)
+    res = asyncio.run(run_script(w))
+    st = w.st()
+    assert "halted" in res or st["phase"] in ("stopped",), (res, st["phase"])
+    assert any("without recording" in l for l in w.logs), w.logs
+    print("ok: silent agents are detected")
 
 
 if __name__ == "__main__":

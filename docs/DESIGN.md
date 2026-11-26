@@ -57,11 +57,17 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
 
 - 插件复制到 `~/.gemini/config/plugins/cogentic` 后，桌面版约 15 秒自动热加载。两个技能都被识别；MCP 服务被命名为 `cogentic_cogentic`，23 个工具全部就绪；`cogentic_init` 和 `cogentic_status` 实际调用成功。MCP 启动时的工作目录是插件根目录，所以 `mcp_config.json` 里的相对路径可以正常解析。
 - 原来的 `install.sh` 硬性要求 `agy` CLI。**已修复**：没有 CLI 时改为复制安装（加 `--copy` 参数可以强制走这条路），先在临时目录准备好再整体替换，并且不会覆盖别的插件。
-- 主对话开着 Plan/Execute 模式时，workflow 用 `type_name="self"` 启动的子 agent 继承了计划审批钩子，所有工具调用和 `finish` 都被拦截，导致死锁。**已修复**：子 agent 改为插件自带的 `agents/cogentic-worker.md`（独立的自定义 agent 类型，显式列出所需工具，继承 MCP，命令自动执行，在 agent 列表里隐藏）；如果宿主不认识这个类型，就自动退回 `self`。
+- 主对话开着 Plan/Execute 模式时，workflow 用 `type_name="self"` 启动的子 agent 继承了计划审批钩子，所有工具调用和 `finish` 都被拦截，导致死锁。第二轮实测又发现：第一版 `cogentic-worker` 写的是 `subagent: false`，`run_workflow` 解析不到它（报 `not found or not allowed to be invoked`），于是悄悄退回 `self`，再次死锁。按官方文档（/docs/subagents、/docs/build-plugins、/docs/dynamic-workflows、/docs/mcp）**全部修复**：
+  - `agents/cogentic-worker.md`：改为 `subagent: true`、`mainAgent: false`；只保留文档里有的字段（去掉了没有文档的 `hidden`）；`tools` 只用官方文档列出的或 Google 自带 agent 实际用过的工具名（文档写明：工具名写错或未映射，subagent 可能会卡住）；加上 `call_mcp_tool`，用来调用懒加载的插件 MCP 工具；`model: pro`。
+  - workflow 每个 agent 都显式指定模型档位，默认 `pro`，不可用时依次退到 `flash`、`flash_lite`。**不再**用 `inherit` 继承对话的模型，因为在 Orchestrator（规划 + 执行）模型下，继承会把计划审批一起带进子 agent。
+  - **不再静默退回 `self`**：解析不到 worker 就停下并给出诊断；只有显式传 `allow_self_fallback` 才退回 `self`。
+  - 熔断与超时：agent 报错、超时（默认 90 分钟），或者完成了却没有记录产出，都计为失败；连续 3 次失败就停下并给出诊断，不再空转烧额度。开局时 orchestrator 失败，不会再继续启动文献检索。
+  - swarm 模式下的同类问题：官方文档说 worker 不指定模型时会继承对话的模型，所以技能现在要求每个成员（包括 narrator 和 monitor）都写明具体的模型 id，并且永远不选 Orchestrator 这个规划 + 执行条目。
+  - 新增 `tests/plugin.test.cjs`：按官方格式静态检查插件清单、agent 的 frontmatter（字段、工具名、枚举值、`subagent`）、技能、链接和 MCP 配置，防止以后再出同类错误。
 - 引擎返回的错误现在都带 `[cogentic]` 标记。workflow 脚本据此区分两种情况：带标记的是真正的协议错误，照常抛出；其他报错一律当作 `call_tool` 在当前宿主里够不到这些工具（比如工具名被加了命名空间），之后统一改由 clerk agent 代为调用。
 
 ## 已知的不确定性
 
 - 在 `/cogentic` 技能里能不能直接调用 swarm 工具，还是必须先用 `/swarm` 进入 swarm 模式？技能里两种情况都处理了：没有 swarm 工具就改走 workflow 模式，或者提示用户用 `/swarm` 开场。
-- `cogentic-worker` 这个自定义 agent 类型在 workflow 里实际能否规避 Plan/Execute 钩子，还要在桌面版上实测确认；如果不行，脚本会退回 `self`，这时请在普通的单模型对话里运行。
+- 修复后的 `cogentic-worker`（`subagent: true` + 显式 `pro` 档位）在 Plan/Execute 对话里能否完整跑通，还要在桌面版上实测。如果宿主仍然把计划审批带给子 agent，熔断会在 3 次失败内停下并给出诊断，不会空转。
 - swarm 模式和 workflow 模式都还没有完整跑完一次端到端的真实运行。

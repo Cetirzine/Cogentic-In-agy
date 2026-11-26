@@ -42,7 +42,7 @@ Windows 上用 PowerShell 运行 `scripts\install.ps1`。
 ### 桌面版使用注意
 
 - 在对话里输入 `/cogentic <问题>` 即可。如果提示当前对话没有 swarm 工具，就新开一个对话，先输入 `/swarm`，再说"用 cogentic 技能解决：<问题>"，或者改用 `--mode workflow`。
-- 对话开着 **Plan/Execute（规划 + 执行双模型）模式**时，orchestrator 会先给出运行计划，等你批准后再开跑。workflow 模式启动的子智能体用的是插件自带的 `cogentic-worker` 类型，不受主对话计划审批的影响，不会卡死。
+- 对话开着 **Plan/Execute（规划 + 执行双模型）模式**时，orchestrator 会先给出运行计划，等你批准后再开跑。workflow 模式启动的子智能体用的是插件自带的 `cogentic-worker` 子 agent，并且固定用 `pro` 档模型，不继承对话的规划 + 执行模型；万一仍然被卡住，连续 3 次失败后会自动停下，并告诉你原因，不会空转消耗额度。
 
 ## 使用
 
@@ -90,7 +90,7 @@ Google 发布新模型（包括以后的 Gemini 5）时，只要它出现在模�
 ## 开发
 
 ```bash
-node --test tests/engine.test.cjs tests/install.test.cjs
+node --test tests/engine.test.cjs tests/install.test.cjs tests/plugin.test.cjs
 ```
 
 ```bash

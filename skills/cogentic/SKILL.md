@@ -48,15 +48,23 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
 
 ## Host notes (Antigravity desktop app and CLI)
 
-- The skill works the same way in the Antigravity desktop app and in the `agy` CLI. The plugin's
-  MCP server may appear under a namespace such as `cogentic_cogentic`. The tools are still the
-  `cogentic_*` tools.
-- If this conversation runs in **Plan/Execute mode** (separate planner and executor models), the
-  host expects a plan before tools run. Write a short run plan (the problem, the mode,
-  `--priority`, the budget and the first steps), get it approved the way that mode requires, and
-  then carry it out. Do not let a plan review stall the run halfway. Agents the workflow starts run
-  as the plugin's `cogentic-worker` agent type, so they are not subject to this conversation's
-  plan reviews.
+- The skill works the same way in the Antigravity desktop app and in the `agy` CLI.
+- **MCP tools.** Antigravity names a plugin's MCP server `<plugin>_<server>`, so the Cogentic tools
+  live on the server `cogentic_cogentic`. Some hosts list them directly as
+  `mcp_cogentic_cogentic_<tool>`, for example `mcp_cogentic_cogentic_cogentic_init`. Others load
+  them lazily: call `call_mcp_tool` with `ServerName: "cogentic_cogentic"`, `ToolName` set to the
+  `cogentic_*` name, and `Arguments`. This file writes the tools by their short `cogentic_*`
+  names.
+- **Plan/Execute (the Orchestrator planner + executor model) or plan mode.** If this conversation
+  runs that way, the host wants a plan before tools run. Write a short run plan (the problem, the
+  mode, `--priority`, the budget and the first steps), get it approved the way the mode requires,
+  then carry it out, so that a plan review does not stall the run halfway.
+- **Never let a worker inherit that setup.** Swarm workers run on the conversation's model unless
+  you name one, so always give every member a concrete model id from
+  `swarm{action:"models", all:true}`. That includes the narrator and the monitor. Never pick the
+  Orchestrator / planner-executor entry for a worker. In workflow mode, the script starts agents
+  as the plugin's `cogentic-worker` subagent on an explicit model tier (`pro` by default), never
+  on the conversation's model.
 - If the swarm tools are missing in the desktop app, start a new conversation with `/swarm`, then
   say `use the cogentic skill on: <problem>`, or use workflow mode.
 
@@ -83,7 +91,7 @@ Every agent is a fresh swarm worker that you add for one job and kill when it po
 (killed names cannot be reused, so names carry the round). Use this brief template every time:
 
 ```
-swarm{action:"add", name:"<name>", model:"<the model you chose for this agent>",
+swarm{action:"add", name:"<name>", model:"<a concrete model id you chose: never omit it>",
       brief:"Cogentic <role>. Load the cogentic-roles skill and follow roles/<role-file>.md.
              run_dir: <run_dir>. Assignment: <slot id | lemma id | scope>.
              When finished, post `@coordinator [done] <one line>`; never paste your work into the board."}
