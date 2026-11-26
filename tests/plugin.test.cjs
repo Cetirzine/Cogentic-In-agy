@@ -142,3 +142,16 @@ test('the user only states the problem; the coordinator sizes the run from quota
   assert.ok(/cogentic_list_runs/.test(skill), 'the coordinator decides on its own whether to resume');
   for (const f of ['README.md', 'README.en.md']) assert.ok(!/\/cogentic --/.test(read(f)), `${f} shows no options`);
 });
+
+test('workers learn every official way to reach the engine, with absolute paths', () => {
+  const roles = read('skills/cogentic-roles/SKILL.md');
+  assert.ok(/call_mcp_tool/.test(roles) && /cogentic\.cjs" cli <tool> --file/.test(roles), 'roles list direct, call_mcp_tool and CLI');
+  assert.ok(/not\*\* a workaround/.test(roles), 'the CLI is declared official, not a workaround');
+  const coord = read('skills/cogentic/SKILL.md');
+  assert.ok(/<roles_dir>\/roles\/<role-file>\.md/.test(coord) && /plugin_dir: <plugin_dir>/.test(coord), 'briefs carry absolute paths');
+  assert.ok(!/Load the cogentic-roles skill and follow roles\//.test(coord), 'no relative role paths in briefs');
+  const worker = read('agents/cogentic-worker.md');
+  assert.ok(/cogentic\.cjs" cli <tool> --file/.test(worker), 'the workflow worker knows the CLI path');
+  const wf = read('skills/cogentic/workflow/cogentic_workflow.py');
+  assert.ok(/plugin_dir: \{PLUGIN_DIR\}/.test(wf) && /--file/.test(wf), 'workflow briefs carry plugin_dir and the CLI');
+});

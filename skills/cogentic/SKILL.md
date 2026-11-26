@@ -87,6 +87,8 @@ words. There are no options to learn: everything else is yours to decide.
 1. `cogentic_init` with `workspace` set to the absolute path of the primary workspace (or of the
    current directory), `problem`, and a short `title`. Add pins or `single_model` only if the user
    asked for them in words. Keep the returned `run_dir`: every brief and every tool call needs it.
+   Also keep `access`: the absolute `plugin_dir` and `roles_dir` of this installation, and the
+   engine CLI. Every worker brief carries them, so workers never search the disk.
 2. `swarm{action:"title", title:"Cogentic: <title>"}`: this creates the swarm.
 3. **See which models you can use.** Call `swarm{action:"models", all:true}`, then
    `cogentic_models{run_dir}`, and read
@@ -118,10 +120,17 @@ Every agent is a fresh swarm worker that you add for one job and kill when it po
 
 ```
 swarm{action:"add", name:"<name>", model:"<a concrete model id you chose: never omit it>",
-      brief:"Cogentic <role>. Load the cogentic-roles skill and follow roles/<role-file>.md.
-             run_dir: <run_dir>. Assignment: <slot id | lemma id | scope>.
-             When finished, post `@coordinator [done] <one line>`; never paste your work into the board."}
+      brief:"Cogentic <role>. Read <roles_dir>/SKILL.md and <roles_dir>/roles/<role-file>.md, and follow them.
+             run_dir: <run_dir>. plugin_dir: <plugin_dir>. Assignment: <slot id | lemma id | scope>.
+             Record output with your role's cogentic_* tool: directly, via call_mcp_tool, or via the
+             engine CLI (agy-node \"<plugin_dir>/mcp/cogentic.cjs\" cli <tool> --file <args.json>),
+             all equally official. When finished, post `@coordinator [done] <one line>`;
+             never paste your work into the board."}
 ```
+
+Write `<roles_dir>` and `<plugin_dir>` as the absolute paths from `access`, never as relative
+names. If a worker reports `[blocked]` on recording, point it to the CLI path in one post (`#seq`
+of its report) before replacing it.
 
 Then call `cogentic_charge{run_dir, role, model, assignment, reason}` once for each agent you
 start. `assignment` is the slot id for summarizers, provers and solo verifiers, `r<n>` for the

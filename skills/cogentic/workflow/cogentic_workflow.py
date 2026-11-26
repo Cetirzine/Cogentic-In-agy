@@ -43,6 +43,9 @@ def _find_roles_dir():
 
 
 ROLES_DIR = _find_roles_dir()
+# <plugin_dir>/skills/cogentic-roles/roles -> <plugin_dir>
+PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.dirname(ROLES_DIR))) if ROLES_DIR else ""
+CLI = os.path.join(PLUGIN_DIR, "mcp", "cogentic.cjs") if PLUGIN_DIR else "<plugin_dir>/mcp/cogentic.cjs"
 MAX_AUDITS = int(args.get("max_audits", 3))
 TIMEOUT = float(args.get("agent_timeout_s", 5400))
 MAX_FAILS = int(args.get("max_consecutive_failures", 3))
@@ -79,10 +82,12 @@ def role_path(name):
 def brief(role, role_file, assignment):
     return (
         f"Cogentic {role}. Read and follow {role_path(role_file)} (from the cogentic-roles skill).\n"
-        f"run_dir: {RUN}\nAssignment: {assignment}\n"
-        f"Record your output with your role's cogentic_* tool (MCP server {SERVER}; call it through call_mcp_tool "
-        "if it is not in your tool list), then call finish with a one-line summary. Work without asking for "
-        "approval; if something blocks you, call finish at once and say why."
+        f"run_dir: {RUN}\nplugin_dir: {PLUGIN_DIR}\nAssignment: {assignment}\n"
+        f"Record your output with your role's cogentic_* tool (MCP server {SERVER}): directly, via call_mcp_tool, or via "
+        f"the engine CLI, all equally official: write the arguments to a JSON file, then run "
+        f"agy-node \"{CLI}\" cli <tool> --file <args.json> (node if agy-node is missing). "
+        "Then call finish with a one-line summary. Work without asking for approval; if something blocks you, "
+        "call finish at once and say why."
     )
 
 
@@ -161,7 +166,8 @@ async def tool(name, **kw):
             _cfg["direct"] = False
     try:
         res = await spawn(
-            f"Call the MCP tool `{name}` of server {SERVER} (through call_mcp_tool if it is not in your tool list) "
+            f"Call the cogentic tool `{name}` of MCP server {SERVER} (directly, via call_mcp_tool, or via the engine CLI: "
+            f"agy-node \"{CLI}\" cli {name} --file <a JSON file holding the arguments>) "
             f"with exactly these arguments and nothing else:\n{json.dumps(kw)}\n"
             "Then call finish with the tool's output verbatim (or 'ERROR: <message>' if it failed).",
             DONE, f"clerk: {name}", timeout=600)

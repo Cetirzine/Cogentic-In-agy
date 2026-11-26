@@ -34,11 +34,22 @@ Your brief names your role, a `run_dir` and your assignment. Read your role file
   `rounds/r<n>/` holds briefings, drafts and verdicts. Open what you need, by path. Do not ask
   for it to be pasted to you.
 - **Record your output only through your role's `cogentic_*` tool.** Its error messages are
-  protocol rules. Read them and fix your call; do not work around them. The tools belong to the
-  plugin's MCP server `cogentic_cogentic`. Call one directly if it is in your tool list (for
-  example `mcp_cogentic_cogentic_cogentic_submit_draft`). Otherwise use `call_mcp_tool` with
-  `ServerName: "cogentic_cogentic"`, `ToolName` (for example `cogentic_submit_draft`) and
-  `Arguments`.
+  protocol rules. Read them and fix your call; do not work around them. The tools are the same
+  engine, reachable in three equally official ways. Use the first one your host offers:
+  1. **Directly**, if the tool is in your tool list, for example
+     `mcp_cogentic_cogentic_cogentic_submit_draft`.
+  2. **Through `call_mcp_tool`**, with `ServerName: "cogentic_cogentic"`, `ToolName` (for example
+     `cogentic_submit_draft`) and `Arguments`.
+  3. **Through the engine's CLI with `run_command`.** Swarm workers often have neither of the
+     above. Write the arguments as a JSON file (for example `<run_dir>/tmp/<your-name>-args.json`)
+     with your file-writing tool, then run
+     `agy-node "<plugin_dir>/mcp/cogentic.cjs" cli <tool> --file <that file>`. Use `node` if
+     `agy-node` is not on PATH. Your brief gives `<plugin_dir>`. The CLI takes exactly the
+     tool's arguments, prints the tool's JSON result, and goes through the same locks and checks.
+     It is **not** a workaround. Prefer `--file` (or `--stdin`) over inline JSON, so that
+     mathematics and quotes need no shell escaping.
+
+  Report `[blocked]` only if all three fail, and quote the error.
 - **Never wait for approval.** Nobody can answer you during a run. Do not write an implementation
   plan for review. If a tool is blocked, finish your turn at once and say why in one line, instead
   of retrying it.

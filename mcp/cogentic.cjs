@@ -22,9 +22,16 @@ function runTool(name, args) {
 }
 
 if (process.argv[2] === 'cli') {
-  const [name, raw] = process.argv.slice(3);
+  // Arguments: inline JSON, or --file <path> (a JSON file), or --stdin / - (JSON on standard input).
+  // Prefer --file or --stdin for long text such as proofs: no shell quoting, no length limits.
+  const [name, a1, a2] = process.argv.slice(3);
+  let raw = a1;
+  try {
+    if (a1 === '--file') raw = require('fs').readFileSync(a2, 'utf8');
+    else if (a1 === '--stdin' || a1 === '-') raw = require('fs').readFileSync(0, 'utf8');
+  } catch (e) { console.error(`[cogentic] cannot read arguments: ${e.message}`); process.exit(2); }
   let args = {};
-  try { args = raw ? JSON.parse(raw) : {}; } catch (e) { console.error(`bad JSON args: ${e.message}`); process.exit(2); }
+  try { args = raw && raw.trim() ? JSON.parse(raw) : {}; } catch (e) { console.error(`[cogentic] bad JSON args: ${e.message}`); process.exit(2); }
   const r = runTool(name, args);
   if (!r.ok) { console.error(r.error); process.exit(1); }
   process.stdout.write(JSON.stringify(r.value, null, 2) + '\n');

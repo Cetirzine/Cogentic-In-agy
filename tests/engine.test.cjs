@@ -201,3 +201,22 @@ test('the coordinator sizes and resizes the run', () => {
   assert.equal(shrunk.budget_calls, 60);
   assert.ok(fs.readFileSync(path.join(run, 'log.jsonl'), 'utf8').includes('quota running low'));
 });
+
+test('CLI: the same engine for agents without MCP tools (--file, --stdin, inline)', () => {
+  const { execFileSync } = require('child_process');
+  const cli = path.join(__dirname, '..', 'mcp', 'cogentic.cjs');
+  const w = ws();
+  const init = JSON.parse(execFileSync(process.execPath, [cli, 'cli', 'cogentic_init', JSON.stringify({ workspace: w, problem: 'p' })], { encoding: 'utf8' }));
+  assert.ok(fs.existsSync(init.access.cli) && fs.existsSync(path.join(init.access.roles_dir, 'SKILL.md')), 'init reports real absolute paths');
+  assert.match(init.access.cli_usage, /--file/);
+  const args = path.join(w, 'args.json');
+  const tricky = 'Let $\\frac{a}{b} > 0$, "quoted", it\'s `code` and $x_{i}^{2}$\nline two';
+  fs.writeFileSync(args, JSON.stringify({ run_dir: init.run_dir, title: 'file', content: tricky }));
+  const a = JSON.parse(execFileSync(process.execPath, [cli, 'cli', 'cogentic_add_literature', '--file', args], { encoding: 'utf8' }));
+  assert.ok(fs.readFileSync(a.path, 'utf8').includes(tricky), 'long LaTeX survives --file unchanged');
+  const b = JSON.parse(execFileSync(process.execPath, [cli, 'cli', 'cogentic_add_literature', '--stdin'], { input: JSON.stringify({ run_dir: init.run_dir, title: 'stdin', content: tricky }), encoding: 'utf8' }));
+  assert.ok(fs.readFileSync(b.path, 'utf8').includes(tricky), 'and --stdin');
+  assert.throws(() => execFileSync(process.execPath, [cli, 'cli', 'cogentic_close_round', JSON.stringify({ run_dir: init.run_dir })], { stdio: 'pipe' }), (e) => /\[cogentic\]/.test(String(e.stderr)));
+  const st = call('cogentic_status', { run_dir: init.run_dir });
+  assert.equal(st.access.plugin_dir, init.access.plugin_dir);
+});

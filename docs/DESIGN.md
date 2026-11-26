@@ -68,6 +68,11 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
   - 用新写的 `scripts/check-agent-tools.sh` 实测了注册表：agy 在调用模型之前就会先解析 agent 的组件，所以不消耗额度，地区不受支持的机器上也能跑。随便编的名字和 `call_mcp_tool` 都会报 not found；`view_file`、`list_dir`、`grep_search`、`find_by_name`、`write_to_file`、`replace_file_content`、`multi_replace_file_content`、`run_command`、`command_status`、`send_command_input`、`search_web`、`read_url_content`、`read_file`、`edit_file`、`write_file`、`manage_task`、`finish`、`send_message`、`invoke_subagent`、`define_subagent`、`ask_question` 全部能解析。
   - worker 的 `tools` 改成只用实测能解析的名字，去掉了 `call_mcp_tool`；也去掉了 `finish`，因为 `run_workflow` 会自己注入它。完整的 worker 定义（含 `model: pro`、`commandExecutionPolicy: auto`）整体实测解析通过。
   - 静态测试的白名单改为这份实测结果，并且明确禁止写 `call_mcp_tool` 和 `finish`。
+- 第一次真实 swarm 运行（桌面版）：三个文献检索员都写好了笔记，却全部报 `[blocked]` 停下。原因是 `swarm{action:"add"}` 拉起的原生 worker 既没有 `call_mcp_tool`，也没有 `mcp_cogentic_cogentic_*`；而角色规范禁止"绕过协议"，worker 不敢改用引擎的 CLI。**已修复**：
+  - CLI 新增 `--file <args.json>` 和 `--stdin` 两种传参方式，含 LaTeX、引号的长文本不用再做 shell 转义。
+  - 角色规范、worker 定义和 workflow 简报都明确写了三条同样官方的调用路径：直接调用、`call_mcp_tool`、`run_command` 调用 CLI。CLI 走的是同一个引擎、同一把锁、同一套检查，**不算绕过**。只有三条路径都失败时，才报 `[blocked]`。
+  - 引擎在 `cogentic_init` 和 `cogentic_status` 里返回 `access`：本次安装的插件目录、角色目录和 CLI 用法的绝对路径。coordinator 把这些路径原样写进每份简报，worker 不再需要全盘 `find`（之前在 macOS 上扫到 `~/Library` 时会超时）。
+  - worker 的工具名改成官方导入指南用的 `read_file`、`write_file`、`edit_file`、`run_command`、`manage_task`、`search_web`，这几个名字都已经在注册表里实测能解析。
 - 引擎返回的错误现在都带 `[cogentic]` 标记。workflow 脚本据此区分两种情况：带标记的是真正的协议错误，照常抛出；其他报错一律当作 `call_tool` 在当前宿主里够不到这些工具（比如工具名被加了命名空间），之后统一改由 clerk agent 代为调用。
 
 ## 已知的不确定性

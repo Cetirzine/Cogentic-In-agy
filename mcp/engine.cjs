@@ -201,7 +201,20 @@ function init(a) {
   writeAtomic(P(runDir).instructions, '# Standing instructions\n\n(none yet: the process advisor writes these at the end of each round)\n');
   save(runDir, st);
   log(runDir, 'init', { title, config: st.config });
-  return { run_dir: runDir, run_id: runId, ...paths(runDir), next: nextStep(runDir, st) };
+  return { run_dir: runDir, run_id: runId, ...paths(runDir), access: access(), next: nextStep(runDir, st) };
+}
+
+// Where this plugin is installed, and how an agent without the MCP tools (e.g. a swarm worker)
+// reaches the same engine: the CLI takes the same arguments as the tool, and uses the same locks.
+function access() {
+  const pluginDir = path.resolve(__dirname, '..');
+  const cli = path.join(pluginDir, 'mcp', 'cogentic.cjs');
+  return {
+    plugin_dir: pluginDir,
+    roles_dir: path.join(pluginDir, 'skills', 'cogentic-roles'),
+    cli,
+    cli_usage: `agy-node "${cli}" cli <cogentic_tool_name> --file <args.json>   (or --stdin; use node if agy-node is not on PATH)`,
+  };
 }
 
 function paths(runDir) {
@@ -820,6 +833,7 @@ function status(a) {
     ledger: { verified: ledger.lemmas.filter((l) => l.status === 'verified').map((l) => ({ id: l.id, statement: l.statement })), pending: ledger.lemmas.filter((l) => l.status === 'pending').map((l) => l.id), excluded: ledger.excluded.map((e) => ({ id: e.id, claim: e.claim })) },
     final: st.final,
     ...paths(runDir),
+    access: access(),
     next: nextStep(runDir, st),
   };
 }
