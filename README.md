@@ -41,7 +41,7 @@ Windows 上用 PowerShell 运行 `scripts\install.ps1`。
 
 ### 桌面版使用注意
 
-- 在对话里输入 `/cogentic <问题>` 即可。如果提示当前对话没有 swarm 工具，就新开一个对话，先输入 `/swarm`，再说"用 cogentic 技能解决：<问题>"，或者改用 `--mode workflow`。
+- 在对话里输入 `/cogentic <问题>`，当前对话就直接成为蜂群的 coordinator，和 `/swarm` 的效果一样，不会另外起一个 agent 来协调。如果你的 Antigravity 版本或者组织设置没有开放 swarm 工具，就输入 `/swarm /cogentic <问题>`（斜杠命令可以叠加使用）。
 - 对话开着 **Plan/Execute（规划 + 执行双模型）模式**时，orchestrator 会先给出运行计划，等你批准后再开跑。workflow 模式启动的子智能体用的是插件自带的 `cogentic-worker` 子 agent，并且固定用 `pro` 档模型，不继承对话的规划 + 执行模型；万一仍然被卡住，连续 3 次失败后会自动停下，并告诉你原因，不会空转消耗额度。
 
 ## 使用
@@ -62,9 +62,9 @@ Windows 上用 PowerShell 运行 `scripts\install.ps1`。
 | `--rounds` | 8 | 最多跑几轮 |
 | `--provers` | 6 | 每轮最多几个 prover |
 | `--budget` | 400 | 一次运行最多启动多少个智能体（论文的规模是 O(100)–O(1000)） |
-| `--mode` | `swarm` | 没有 swarm 工具的环境会自动退回到 `workflow` 模式 |
+| `--mode` | `swarm` | `workflow` 是不走 swarm 的后备模式，只在 swarm 完全不可用时使用 |
 
-如果 `/cogentic` 提示当前会话里没有 swarm 工具，可以用 `/swarm` 开场，然后说"用 cogentic 技能解决：<问题>"，或者直接改用 workflow 模式。
+`/cogentic` 本身就是一个蜂群：当前对话就是 coordinator（也就是论文里的 orchestrator），各个角色作为 swarm worker 加入，进度在 swarm 看板上可以看到。
 
 ## 运行产物
 

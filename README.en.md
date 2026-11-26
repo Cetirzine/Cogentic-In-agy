@@ -65,9 +65,10 @@ The installer picks the method by itself:
   whole, and it never replaces a folder that holds a different plugin. The desktop app loads the
   plugin within seconds, with no restart. Manage it on the app's Customizations page.
 
-In the desktop app, type `/cogentic <problem>`. If the conversation has no swarm tools, open a new
-conversation with `/swarm` and say `use the cogentic skill on: <problem>`, or use
-`--mode workflow`. In **Plan/Execute** (planner + executor) conversations, the orchestrator first
+`/cogentic <problem>` is itself a swarm: the current conversation becomes its coordinator, as with
+`/swarm`, and no extra agent is started to coordinate. If your Antigravity version or organization
+does not offer the swarm tools, type `/swarm /cogentic <problem>` (slash commands combine).
+In **Plan/Execute** (planner + executor) conversations, the orchestrator first
 asks you to approve a run plan. Workflow agents run as the plugin's `cogentic-worker` subagent on an
 explicit `pro` tier, never on the conversation's planner + executor model. If they are blocked
 anyway, the run halts after 3 consecutive failures and says why, instead of spinning.

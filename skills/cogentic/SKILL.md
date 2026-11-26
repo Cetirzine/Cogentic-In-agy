@@ -1,19 +1,22 @@
 ---
 name: cogentic
 description: >-
-  Cogentic proof-discovery mode (arXiv:2609.40324): turns this conversation into the orchestrator of
-  a swarm of agents, each on a model it picks from the user's plan (literature reviewers, summarizers, parallel provers, adversarial
-  verifiers, auditor, process advisor, comparator, formal writer, final auditor) that work in rounds
-  on one open mathematical problem until a proof clears verification and is written up as a
+  Cogentic proof-discovery mode (arXiv:2609.40324) as an Antigravity swarm: this conversation
+  becomes the swarm's coordinator and runs a research group of workers, each on a model it picks
+  from the user's plan (literature reviewers, summarizers, parallel provers, adversarial verifiers,
+  auditor, process advisor, comparator, formal writer, final auditor). They work in rounds on one
+  open mathematical problem until a proof clears verification and is written up as a
   self-contained manuscript. Use when the user types /cogentic or asks to run Cogentic on a problem.
 metadata:
   icon: hub
 ---
 
-# Cogentic: you are the orchestrator
+# Cogentic: you are the swarm coordinator
 
-You coordinate a research group of agents on one problem. You track state, plan rounds, start
-agents, wait for them, and judge whether the protocol was followed. The state tools
+`/cogentic` is a swarm. This conversation, the user's main conversation, is its coordinator and
+the paper's orchestrator, exactly as `/swarm` makes the current conversation the coordinator.
+Never start another agent or subagent to coordinate. You track state, plan rounds, add workers,
+wait for them, and judge whether the protocol was followed. The state tools
 (`cogentic_*`, from this plugin's `cogentic` MCP server) are the source of truth. The swarm board
 is only how agents tell each other that they are done.
 
@@ -37,14 +40,26 @@ and `--resume` to continue the newest run in this workspace (`cogentic_list_runs
 Take the problem statement **verbatim**. If it is ambiguous enough that agents would guess,
 ask the user before you start. Otherwise do not add hints, techniques or expected answers.
 
-## 1. Choose the mode
+## 1. The swarm
 
-- **Swarm mode** (the default) needs the `swarm`, `post_message`, `read_board` and `swarm_wait`
-  tools. Follow this file.
-- If those tools are not in your tool list, or the user passed `--mode workflow`, follow
-  [references/workflow-mode.md](references/workflow-mode.md) instead. If the user wants the swarm
-  board, tell them to start the conversation with `/swarm` and then say `use the cogentic skill on:
-  <problem>`. That loads the swarm tools, and this skill works the same way.
+- **Start it yourself, at once.** Calling `swarm{action:"title"}` or `swarm{action:"add"}` creates
+  the swarm, with this conversation as its coordinator. Only the `swarm` tool is needed for that.
+  `post_message`, `read_board` and `swarm_wait` only appear **from your next turn**, so do not
+  look for them before you start. In the first turn, create the swarm, add the first workers, end
+  with the `open_board` line, and end the turn. A post that names `@coordinator` wakes you.
+- **Already a coordinator?** If this conversation already runs a swarm (the user typed
+  `/swarm /cogentic …`, or you are resuming), keep using it. Never create a second swarm.
+- **Coordinate the way the swarm does.** Do not do the technical work yourself. Keep your turns
+  short, and answer the user between waits. Name workers for their job. A brief is public, and it
+  is everything the worker gets. Workers post `@coordinator [done] <one line>`. Refer to posts by
+  `#seq`, never by copying them. `swarm{action:"status"}` tells you who is waiting, working,
+  stopped or killed. If every worker is waiting and the run is not done, the swarm is waiting on
+  you.
+- **No `swarm` tool?** Older Antigravity versions, or an organization admin, may not offer it.
+  Then tell the user to type `/swarm /cogentic <problem>` (slash commands can be combined): that
+  turns this conversation into a coordinator with this skill loaded. Use
+  [references/workflow-mode.md](references/workflow-mode.md), a non-swarm fallback run by a
+  script, only if swarms are unavailable altogether or the user passed `--mode workflow`.
 
 ## Host notes (Antigravity desktop app and CLI)
 
@@ -65,25 +80,27 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
   Orchestrator / planner-executor entry for a worker. In workflow mode, the script starts agents
   as the plugin's `cogentic-worker` subagent on an explicit model tier (`pro` by default), never
   on the conversation's model.
-- If the swarm tools are missing in the desktop app, start a new conversation with `/swarm`, then
-  say `use the cogentic skill on: <problem>`, or use workflow mode.
 
-## 2. Set up
+## 2. Set up (your first turn)
 
 1. `cogentic_init` with `workspace` set to the absolute path of the primary workspace (or of the
    current directory), `problem`, a short `title`, and the flags. Keep the returned `run_dir`: every
    brief and every tool call needs it.
-2. **See which models you can use.** Call `swarm{action:"models", all:true}`, then
+2. `swarm{action:"title", title:"Cogentic: <title>"}`: this creates the swarm.
+3. **See which models you can use.** Call `swarm{action:"models", all:true}`, then
    `cogentic_models{run_dir}`, and read
    [references/model-selection.md](references/model-selection.md). You choose a model for every
-   agent you start, from that list. Nothing is fixed in advance.
-3. `swarm{action:"title", title:"Cogentic: <title>"}`.
-4. Add the narrator and, if the `swarm_monitor` skill is in your skill list, the monitor, exactly as
-   the swarm rules describe. Put both on the cheapest, fastest model in the list. Add one sentence to the narrator's
+   worker you add, from that list. Nothing is fixed in advance.
+4. If the `swarm_narrator` skill is in your skill list, add the narrator, and if the
+   `swarm_monitor` skill is, add the monitor. Use the briefs the swarm uses: the narrator loads
+   `swarm_narrator` and never posts; the monitor loads `swarm_monitor` and posts only to break a
+   stall. Put both on the cheapest, fastest model in the list. Add one sentence to the narrator's
    brief: `For the Overview, call cogentic_status on <run_dir> and show the phase, the round with
    each slot's state, accepted drafts, ledger counts (verified / pending / excluded) and calls used
    against the budget.`
-5. End this first turn with the `open_board` line, as the swarm rules require.
+5. Add the literature reviewers (§4) in the same turn.
+6. Tell the user your model plan in one line. End the turn with the `open_board` value of your
+   latest `add` or `status` result, on its own line, exactly as given.
 
 ## 3. Starting agents
 
@@ -100,8 +117,8 @@ swarm{action:"add", name:"<name>", model:"<a concrete model id you chose: never 
 Then call `cogentic_charge{run_dir, role, model, assignment, reason}` once for each agent you
 start. `assignment` is the slot id for summarizers, provers and solo verifiers, `r<n>` for the
 cross verifier, and the lemma id for lemma verifiers. `reason` is one line on why you chose that
-model. The engine checks the model against the policy and the user's pins, and uses these records
-to report how each model performs (`cogentic_models`). Briefs are public, so
+model. The engine checks the model against the user's pins, and uses these records to report how
+each model performs (`cogentic_models`). Briefs are public, so
 put nothing in them except the role, the run_dir and the assignment: all content travels as files
 under `run_dir`. Start independent agents in the same turn. When you need several copies of one
 role, use the swarm's `tasks` option with one assignment per copy (they become `<name>-1`…).

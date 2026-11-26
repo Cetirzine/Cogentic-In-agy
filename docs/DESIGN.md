@@ -47,7 +47,7 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
 
 ## Workflow 模式
 
-如果当前环境没有 swarm 工具，就退回到 `run_workflow`：由脚本写定步骤顺序，智能体负责所有判断。
+只有在 swarm 完全不可用时（旧版本，或者组织管理员关闭了 swarm），才退回到 `run_workflow`：由脚本写定步骤顺序，智能体负责所有判断。
 `run_workflow` 只能选择模型档位（tier），所以这个模式下所有 agent 都继承当前会话的模型，
 请用户把会话切到列表里最强的模型之一。脚本每一步都会先检查状态，已完成的就跳过，中断后可以从原处接着跑。
 
@@ -72,6 +72,6 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
 
 ## 已知的不确定性
 
-- 在 `/cogentic` 技能里能不能直接调用 swarm 工具，还是必须先用 `/swarm` 进入 swarm 模式？技能里两种情况都处理了：没有 swarm 工具就改走 workflow 模式，或者提示用户用 `/swarm` 开场。
+- **蜂群一体化。** `/cogentic` 本身就是 swarm：主对话就是 coordinator，不会另起 agent 来协调。根据 agy 内置的 swarm 工具说明，第一次调用 `swarm{action:"title"}` 或 `add` 就会建立蜂群，当前对话随即成为 coordinator；`post_message`、`read_board`、`swarm_wait` 要到下一轮才出现。旧版技能要求这三个工具一开始就在，否则退回 workflow，这是个 bug，已经修掉。现在只检查 `swarm` 工具；没有的话，提示用户用 `/swarm /cogentic <问题>` 叠加启动。普通对话里是否一定能拿到 `swarm` 工具，还需要实测确认。
 - 修复后的 `cogentic-worker`（`subagent: true` + 显式 `pro` 档位）在 Plan/Execute 对话里能否完整跑通，还要在桌面版上实测。如果宿主仍然把计划审批带给子 agent，熔断会在 3 次失败内停下并给出诊断，不会空转。
 - swarm 模式和 workflow 模式都还没有完整跑完一次端到端的真实运行。

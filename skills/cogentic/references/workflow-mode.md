@@ -1,7 +1,10 @@
 # Workflow mode (fallback)
 
-Use workflow mode when the swarm tools (`swarm`, `post_message`, `read_board`, `swarm_wait`) are
-not available, or when the user asked for `--mode workflow`. It runs the same protocol through
+Cogentic is a swarm. Use this mode only when swarms are unavailable altogether: no `swarm` tool,
+and `/swarm /cogentic <problem>` does not work either (an older version, or an organization admin
+turned swarms off). Also use it when the user explicitly asked for `--mode workflow`. In this mode,
+orchestrator decisions are made by orchestrator agents that the script starts, not by this
+conversation, so tell the user it is a fallback. It runs the same protocol through
 Antigravity's built-in `run_workflow` engine, in both the desktop app and the `agy` CLI. Each
 agent appears as a card in the workflow step, in place of the swarm board.
 

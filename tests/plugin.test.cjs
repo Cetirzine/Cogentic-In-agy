@@ -123,3 +123,14 @@ test('docs that name the MCP server use its namespaced name', () => {
     assert.ok(read(f).includes('call_mcp_tool'), `${f} explains call_mcp_tool`);
   }
 });
+
+test('cogentic is a swarm run from the main conversation', () => {
+  const skill = read('skills/cogentic/SKILL.md');
+  // The board tools only exist once the swarm is created: requiring them up front sent every run to
+  // the workflow fallback.
+  assert.ok(!/needs the `swarm`, `post_message`/.test(skill), 'only the swarm tool is a precondition');
+  assert.ok(/from your next turn/.test(skill), 'explains that board tools arrive after the swarm is created');
+  assert.ok(/swarm\{action:"title"/.test(skill), 'the first turn creates the swarm');
+  assert.ok(/Never start another agent or subagent to coordinate/.test(skill), 'the main conversation is the coordinator');
+  assert.ok(/\/swarm \/cogentic/.test(skill), 'fallback to the combined slash commands');
+});
