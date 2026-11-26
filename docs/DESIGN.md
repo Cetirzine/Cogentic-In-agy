@@ -27,7 +27,7 @@ prompt，下文的所有提示词与实现都是本仓库按论文第 2 节的�
 | 收尾：comparator → formal writer → 最终审计 | `cogentic_select_best` → `cogentic_submit_manuscript` → `cogentic_submit_audit`；审计不通过就退回 writer 重写，最多 3 次 | 引擎 |
 | 产出一份自包含的文稿 | `final/manuscript.md`（每个版本另存为 `manuscript-v*.md`） | 提示词 + 最终审计 |
 | 预算为 O(100)–O(1000) 次模型调用 | 每启动一个 agent 就 `cogentic_charge` 一次；`budget_calls` 默认 400；超出预算不能再开新轮 | 引擎 |
-| 基础模型为 Gemini 3.1 Pro 或早期版 Gemini 4 Argon，整次运行只用一个模型 | 默认由 orchestrator 从订阅提供的模型列表里，按角色为每个智能体挑选模型（见 MODELS.md）；`--single-model` 可以复现"整次运行只用一个模型"的设定 | 不限制模型；引擎记录每个智能体用的模型，统计各模型的表现，并保证用户用 `--pin` 指定的模型生效 |
+| 基础模型为 Gemini 3.1 Pro 或早期版 Gemini 4 Argon，整次运行只用一个模型 | 默认由 orchestrator 从订阅提供的模型列表里，按角色为每个智能体挑选模型（见 MODELS.md）；用户用一句话说"只用一个模型"，就能复现论文"整次运行只用一个模型"的设定（对应 `single_model`） | 不限制模型；引擎记录每个智能体用的模型，统计各模型的表现，并保证用户明确要求的模型生效 |
 
 ## 为什么用 swarm
 

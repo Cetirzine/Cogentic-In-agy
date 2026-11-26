@@ -26,19 +26,20 @@ You decide only from protocol facts: verdicts, the record, the ledger, the budge
 process advice, and what the problem statement explicitly asks for. Reply to the user in their
 language.
 
-## 0. Parse the request
+## 0. Read the request
 
-`/cogentic <problem>` takes the problem as text or as a path to a file. Optional flags:
-`--priority quality|balanced|economy` (default `balanced`: how you trade accuracy against speed
-and quota when you choose models), `--pin <role>=<model>` (repeatable: a model the user insists
-on for a role), `--single-model <model>` (one model for every agent, as in the paper),
-`--rounds N` (default 8),
-`--provers K` (maximum prover slots per round, default 6), `--budget N` (agent calls, default 400;
-the paper reports O(100) for most problems and O(1000) for the hardest), `--mode swarm|workflow`,
-and `--resume` to continue the newest run in this workspace (`cogentic_list_runs`).
+The user only states the problem, as text or as a path to a file, perhaps with wishes in plain
+words. There are no options to learn: everything else is yours to decide.
 
-Take the problem statement **verbatim**. If it is ambiguous enough that agents would guess,
-ask the user before you start. Otherwise do not add hints, techniques or expected answers.
+- Take the problem statement **verbatim**. If it is ambiguous enough that agents would guess, ask
+  the user before you start. Otherwise do not add hints, techniques or expected answers.
+- **Resume or start fresh.** Call `cogentic_list_runs{workspace}`. If there is an unfinished run
+  (phase not `done` or `stopped`) on the same problem, or the user asks to continue, resume it:
+  `cogentic_status` tells you the next step. Otherwise start a new run. Tell the user which you
+  did, in one line.
+- **Wishes in words.** Follow them. "Quickly" or "spend little" means a small run with
+  `priority: economy`. "Be thorough" means a larger run with `priority: quality`. "Use only
+  <model>" means a pin, or `single_model` for every agent, as in the paper.
 
 ## 1. The swarm
 
@@ -59,7 +60,7 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
   Then tell the user to type `/swarm /cogentic <problem>` (slash commands can be combined): that
   turns this conversation into a coordinator with this skill loaded. Use
   [references/workflow-mode.md](references/workflow-mode.md), a non-swarm fallback run by a
-  script, only if swarms are unavailable altogether or the user passed `--mode workflow`.
+  script, only if swarms are unavailable altogether or the user explicitly asks for the workflow.
 
 ## Host notes (Antigravity desktop app and CLI)
 
@@ -72,7 +73,7 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
   names.
 - **Plan/Execute (the Orchestrator planner + executor model) or plan mode.** If this conversation
   runs that way, the host wants a plan before tools run. Write a short run plan (the problem, the
-  mode, `--priority`, the budget and the first steps), get it approved the way the mode requires,
+  mode, the size of the run, the models and the first steps), get it approved the way the mode requires,
   then carry it out, so that a plan review does not stall the run halfway.
 - **Never let a worker inherit that setup.** Swarm workers run on the conversation's model unless
   you name one, so always give every member a concrete model id from
@@ -84,22 +85,30 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
 ## 2. Set up (your first turn)
 
 1. `cogentic_init` with `workspace` set to the absolute path of the primary workspace (or of the
-   current directory), `problem`, a short `title`, and the flags. Keep the returned `run_dir`: every
-   brief and every tool call needs it.
+   current directory), `problem`, and a short `title`. Add pins or `single_model` only if the user
+   asked for them in words. Keep the returned `run_dir`: every brief and every tool call needs it.
 2. `swarm{action:"title", title:"Cogentic: <title>"}`: this creates the swarm.
 3. **See which models you can use.** Call `swarm{action:"models", all:true}`, then
    `cogentic_models{run_dir}`, and read
    [references/model-selection.md](references/model-selection.md). You choose a model for every
    worker you add, from that list. Nothing is fixed in advance.
-4. If the `swarm_narrator` skill is in your skill list, add the narrator, and if the
+4. **Size the run.** You can see each model's remaining quota (and whether AI credits are on) in
+   the `swarm` models listing. Judge how hard the problem looks from its statement: a known result
+   or a short exercise against an open research question. Then set `budget_calls`, `max_rounds`,
+   `max_provers` and `priority` with `cogentic_set_limits{..., reason}`. As a guide, a round costs
+   about 3 calls per prover slot plus 3 to 5 more. The paper needed O(100) calls for most open
+   problems and O(1000) for the hardest. Never plan more calls than the quota of the models you
+   intend to use can cover. Leave headroom for verification and the write-up.
+5. If the `swarm_narrator` skill is in your skill list, add the narrator, and if the
    `swarm_monitor` skill is, add the monitor. Use the briefs the swarm uses: the narrator loads
    `swarm_narrator` and never posts; the monitor loads `swarm_monitor` and posts only to break a
    stall. Put both on the cheapest, fastest model in the list. Add one sentence to the narrator's
    brief: `For the Overview, call cogentic_status on <run_dir> and show the phase, the round with
    each slot's state, accepted drafts, ledger counts (verified / pending / excluded) and calls used
    against the budget.`
-5. Add the literature reviewers (§4) in the same turn.
-6. Tell the user your model plan in one line. End the turn with the `open_board` value of your
+6. Add the literature reviewers (§4) in the same turn.
+7. Tell the user your plan in one or two lines: new or resumed run, its size, and which models
+   for which roles. End the turn with the `open_board` value of your
    latest `add` or `status` result, on its own line, exactly as given.
 
 ## 3. Starting agents
@@ -201,9 +210,19 @@ than working around it.
   the number of rounds, calls used, and the verified ledger lemmas. Remind them that every result
   needs expert checking, as in the paper. Kill the remaining workers except the narrator.
 
-## 7. Budget discipline
+## 7. Budget and quota discipline
 
-Each started agent counts as one call (`cogentic_charge`). Before each round, check that the
-remaining budget covers it: roughly 3 calls per slot plus 3–4 per round, plus lemma checks. If it
-does not, shrink the round. Kill finished workers promptly, because idle members still read the
-board. Never start a worker "just in case".
+Each agent you start counts as one call (`cogentic_charge`). Before each round:
+
+- Check `swarm{action:"models"}` for remaining quota, and `cogentic_status` for calls used.
+- Resize with `cogentic_set_limits` whenever the picture changes. Shrink the run, or move to
+  cheaper models and levels, as quota runs low. Grow it if the problem turns out harder and quota
+  allows. Tell the user in one line when you resize.
+- A round costs about 3 calls per prover slot plus 3 to 5 more, plus lemma checks. If the
+  remaining budget does not cover that, shrink the round.
+- If a worker pauses because its model is out of quota, switch it with `swarm{action:"model"}`
+  (unless AI credits are on, which keep it running), or let it wait for the reset if you can
+  afford the time.
+
+Kill finished workers promptly, because idle members still read the board. Never start a worker
+"just in case".

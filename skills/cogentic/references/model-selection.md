@@ -9,7 +9,8 @@ round, or whenever an `add` fails on a model.
 
 - **The list** (`swarm{action:"models", all:true}`): what you can choose from.
 - **`cogentic_models{run_dir}`** gives you:
-  - `priority`: `quality`, `balanced` or `economy`;
+  - `priority`: `quality`, `balanced` or `economy`. It is your choice, set with `cogentic_set_limits`
+    unless the user said what they want;
   - `pins` and `single_model`: the user's explicit choices, which always win;
   - `catalog`: model cards for known families, what each role needs, and selection principles.
     It is advice, not rules;

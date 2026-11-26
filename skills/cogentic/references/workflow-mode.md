@@ -2,7 +2,7 @@
 
 Cogentic is a swarm. Use this mode only when swarms are unavailable altogether: no `swarm` tool,
 and `/swarm /cogentic <problem>` does not work either (an older version, or an organization admin
-turned swarms off). Also use it when the user explicitly asked for `--mode workflow`. In this mode,
+turned swarms off). Also use it when the user explicitly asks for the workflow. In this mode,
 orchestrator decisions are made by orchestrator agents that the script starts, not by this
 conversation, so tell the user it is a fallback. It runs the same protocol through
 Antigravity's built-in `run_workflow` engine, in both the desktop app and the `agy` CLI. Each

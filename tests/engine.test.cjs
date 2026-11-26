@@ -189,3 +189,15 @@ test('MCP stdio: initialize, tools/list, tools/call, errors', async () => {
   assert.equal(by[4].result.isError, true);
   assert.equal(by[5].error.code, -32601);
 });
+
+test('the coordinator sizes and resizes the run', () => {
+  const { run_dir: run } = init({ budget_calls: 40, max_rounds: 2, max_provers: 2 });
+  const r = call('cogentic_set_limits', { run_dir: run, budget_calls: 120, max_rounds: 4, max_provers: 3, priority: 'quality', reason: 'hard problem, plenty of Carbon quota' });
+  assert.deepEqual([r.budget_calls, r.max_rounds, r.max_provers, r.priority], [120, 4, 3, 'quality']);
+  call('cogentic_charge', { run_dir: run, role: 'prover', model: 'gemini-4-carbon-high', calls: 50 });
+  rejects(() => call('cogentic_set_limits', { run_dir: run, budget_calls: 20, reason: 'x' }), /budget_calls/);
+  rejects(() => call('cogentic_set_limits', { run_dir: run, max_rounds: 3 }), /reason/);
+  const shrunk = call('cogentic_set_limits', { run_dir: run, budget_calls: 60, priority: 'economy', reason: 'quota running low' });
+  assert.equal(shrunk.budget_calls, 60);
+  assert.ok(fs.readFileSync(path.join(run, 'log.jsonl'), 'utf8').includes('quota running low'));
+});

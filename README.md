@@ -46,25 +46,23 @@ Windows 上用 PowerShell 运行 `scripts\install.ps1`。
 
 ## 使用
 
+只需要一条指令，把问题写清楚即可：
+
 ```text
-/cogentic 证明或否定：……（把问题完整写清楚，不要加提示）
-/cogentic --priority economy --rounds 3 <问题>       # 偏省额度
-/cogentic --single-model gemini-4-carbon-high <问题>  # 所有智能体用同一个模型，和论文设定一致
-/cogentic --pin final_auditor=gemini-4-carbon-high <问题>  # 指定某个角色用某个模型
-/cogentic --resume                     # 接着跑这个工作区里最近一次运行
+/cogentic 证明或否定：……
 ```
 
-| 参数 | 默认值 | 说明 |
-|---|---|---|
-| `--priority` | `balanced` | orchestrator 选模型时偏向哪一边：`quality` 精度优先，`economy` 额度优先 |
-| `--pin` | 无 | `<角色>=<模型>`，强制某个角色用指定模型，可以写多次 |
-| `--single-model` | 无 | 所有智能体用同一个模型 |
-| `--rounds` | 8 | 最多跑几轮 |
-| `--provers` | 6 | 每轮最多几个 prover |
-| `--budget` | 400 | 一次运行最多启动多少个智能体（论文的规模是 O(100)–O(1000)） |
-| `--mode` | `swarm` | `workflow` 是不走 swarm 的后备模式，只在 swarm 完全不可用时使用 |
+其余的事都由蜂群的 coordinator（也就是当前对话本身）自己决定，包括：
 
-`/cogentic` 本身就是一个蜂群：当前对话就是 coordinator（也就是论文里的 orchestrator），各个角色作为 swarm worker 加入，进度在 swarm 看板上可以看到。
+- 跑多少轮、每轮几个 prover、总预算多少；
+- 每个角色用哪个模型；
+- 是接着上次没跑完的同一道题，还是新开一次运行。
+
+它能看到你订阅里每个模型的剩余额度和可用模型列表，会按题目难度和剩余额度来安排规模，额度变紧时自动收缩规模或者换成更省的模型，并且用一句话告诉你它的安排。
+
+如果你有偏好，直接用自然语言说就行，比如"省着点用额度""尽量严谨""只用 Carbon"。
+
+`/cogentic` 本身就是一个蜂群：各个角色作为 swarm worker 加入，进度在 swarm 看板上可以看到。
 
 ## 运行产物
 

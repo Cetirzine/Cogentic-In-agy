@@ -8,7 +8,7 @@
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "/cogentic Prove or disprove: <your open problem, stated precisely>",
-    "/cogentic --priority quality <hard problem>",
-    "/cogentic --resume"
+    "/cogentic Prove or disprove, and be thorough: <hard problem>",
+    "/cogentic Continue the last Cogentic run"
   ]
 }

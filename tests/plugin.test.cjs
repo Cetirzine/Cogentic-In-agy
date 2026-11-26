@@ -134,3 +134,11 @@ test('cogentic is a swarm run from the main conversation', () => {
   assert.ok(/Never start another agent or subagent to coordinate/.test(skill), 'the main conversation is the coordinator');
   assert.ok(/\/swarm \/cogentic/.test(skill), 'fallback to the combined slash commands');
 });
+
+test('the user only states the problem; the coordinator sizes the run from quota and models', () => {
+  const skill = read('skills/cogentic/SKILL.md');
+  assert.ok(!/--(priority|pin|single-model|rounds|provers|budget|mode|resume)\b/.test(skill), 'no command-line options for the user');
+  assert.ok(/cogentic_set_limits/.test(skill) && /quota/.test(skill), 'the coordinator sizes and resizes the run from quota');
+  assert.ok(/cogentic_list_runs/.test(skill), 'the coordinator decides on its own whether to resume');
+  for (const f of ['README.md', 'README.en.md']) assert.ok(!/\/cogentic --/.test(read(f)), `${f} shows no options`);
+});

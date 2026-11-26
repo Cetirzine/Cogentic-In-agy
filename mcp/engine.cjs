@@ -242,6 +242,27 @@ function assignedModel(st, role, assignment, round) {
   return hit ? hit.model : '';
 }
 
+// The coordinator sizes the run itself (from the problem, the models it can use and their quota) and
+// may resize it at any time, e.g. when quota runs low or a hard problem needs more rounds.
+function setLimits(a) {
+  const runDir = resolveRun(a.run_dir);
+  return withLock(runDir, () => {
+    const st = load(runDir);
+    if (st.phase === 'done' || st.phase === 'stopped') fail(`the run is ${st.phase}`);
+    const c = st.config;
+    const before = { budget_calls: c.budget_calls, max_rounds: c.max_rounds, max_provers: c.max_provers, priority: c.priority };
+    if (a.budget_calls !== undefined) c.budget_calls = int(a.budget_calls, 'budget_calls', c.budget_calls, Math.max(10, st.calls_used), 100000);
+    if (a.max_rounds !== undefined) c.max_rounds = int(a.max_rounds, 'max_rounds', c.max_rounds, Math.max(1, st.rounds.length), 200);
+    if (a.max_provers !== undefined) c.max_provers = int(a.max_provers, 'max_provers', c.max_provers, 1, 64);
+    if (a.priority !== undefined) c.priority = oneOf(a.priority, 'priority', PRIORITIES);
+    const reason = str(a.reason, 'reason', { max: 2000 });
+    const after = { budget_calls: c.budget_calls, max_rounds: c.max_rounds, max_provers: c.max_provers, priority: c.priority };
+    save(runDir, st);
+    log(runDir, 'limits', { before, after, reason });
+    return { ...after, calls_used: st.calls_used, rounds_used: st.rounds.length };
+  });
+}
+
 // Per-model outcomes so far, for the orchestrator's model choices.
 function modelStats(st, record) {
   const by = {};
@@ -827,6 +848,7 @@ const TOOLS = {
   cogentic_status: { fn: status, description: 'Anyone: the run\'s phase, current round, ledger summary, budget, file paths, and the next protocol step.', schema: S(RUN, ['run_dir']) },
   cogentic_list_runs: { fn: listRuns, description: 'List Cogentic runs in a workspace, newest first.', schema: S({ workspace: { type: 'string' } }, ['workspace']) },
   cogentic_charge: { fn: charge, description: 'Orchestrator: record every agent you start: its role, the model you chose for it (any model the swarm lists), its assignment (slot id, r<n>, lemma id, ...) and why that model. Counts against the budget; honours the user\'s pins.', schema: S({ ...RUN, role: { type: 'string', enum: ROLES }, model: { type: 'string' }, assignment: { type: 'string' }, reason: { type: 'string' }, calls: { type: 'integer' } }, ['run_dir', 'role']) },
+  cogentic_set_limits: { fn: setLimits, description: 'Coordinator: size or resize the run (budget of agent calls, maximum rounds, prover slots per round, accuracy-vs-quota priority) from the problem, the models you can use and their remaining quota. Give the reason.', schema: S({ ...RUN, budget_calls: { type: 'integer' }, max_rounds: { type: 'integer' }, max_provers: { type: 'integer' }, priority: { type: 'string', enum: PRIORITIES }, reason: { type: 'string' } }, ['run_dir', 'reason']) },
   cogentic_models: { fn: models, description: 'Orchestrator: everything needed to choose a model: priority, pins, the catalog of model cards (advice), calls per model, and each model\'s outcomes in this run (drafts accepted/rejected, verifier misses).', schema: S(RUN, ['run_dir']) },
   cogentic_add_literature: { fn: addLiterature, description: 'Literature reviewer: save a survey note (definitions, theorems with exact statements and sources, related work, known barriers).', schema: S({ ...RUN, title: { type: 'string' }, content: { type: 'string' }, sources: { type: 'array', items: { type: 'string' } }, reviewer: { type: 'string' } }, ['run_dir', 'title', 'content']) },
   cogentic_open_round: { fn: openRound, description: 'Orchestrator: open the next round with its directions (a specific claim, a counterexample search, or repairing/finalizing a promising proof) and the number of prover slots for each. Reuse a direction by id.', schema: S({ ...RUN, directions: { type: 'array', items: { type: 'object', properties: { id: { type: 'string', description: 'Existing direction id to continue.' }, claim: { type: 'string', description: 'For a new direction: the precise statement to establish or refute.' }, kind: { type: 'string', enum: DIRECTION_KINDS }, provers: { type: 'integer' } } } }, note: { type: 'string' } }, ['run_dir', 'directions']) },

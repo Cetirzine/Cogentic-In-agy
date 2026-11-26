@@ -75,16 +75,18 @@ anyway, the run halts after 3 consecutive failures and says why, instead of spin
 
 ## Use
 
+One command, stating the problem:
+
 ```text
-/cogentic Prove or disprove: <the full problem statement, without hints>
-/cogentic --priority economy <problem>                  # spare the quota
-/cogentic --single-model gemini-4-carbon-high <problem>  # one model for every agent, as in the paper
-/cogentic --resume
+/cogentic Prove or disprove: <the full problem statement>
 ```
 
-Flags: `--priority quality|balanced|economy`, `--pin <role>=<model>`, `--single-model <model>`,
-`--rounds` (default 8), `--provers` (maximum prover slots per round, default 6), `--budget`
-(maximum number of agents per run, default 400), and `--mode swarm|workflow`.
+The swarm's coordinator (the conversation itself) decides everything else: how many rounds, how
+many provers per round, the budget, which model runs each role, and whether to resume an
+unfinished run on the same problem. It sees each model's remaining quota and the available
+models, sizes the run to the problem and the quota, shrinks the run or moves to cheaper models as
+quota runs low, and tells you its plan in a line or two. If you have preferences, say them in
+words: "spare the quota", "be thorough", "use only Carbon".
 
 Each run is stored as plain files in `<workspace>/.cogentic/<run_id>/`: the problem, literature
 notes, per-round briefings, drafts and verdicts, `record.jsonl`, the verified ledger, the process
