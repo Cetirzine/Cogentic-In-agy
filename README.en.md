@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/runtime-agy--node,_zero_deps-339933?logo=nodedotjs&logoColor=white" alt="agy-node, zero dependencies">
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cetirzine/Cogentic-In-agy/ci.yml?logo=github&label=tests" alt="Tests"></a>
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/stargazers"><img src="https://img.shields.io/github/stars/Cetirzine/Cogentic-In-agy?logo=github" alt="Stars"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
 [简体中文](README.md) · Paper: [arXiv:2609.40324](https://arxiv.org/abs/2609.40324)
@@ -27,6 +28,10 @@ that follows Section 2 of the paper round by round:
 
 Once a proof clears verification, a comparator, a formal writer and a final audit turn it into a
 self-contained manuscript.
+
+<p align="center"><img src="docs/figure/cogentic_architecture.png" width="900" alt="Cogentic-In-agy architecture"></p>
+
+The figure is drawn in R ([docs/figure/architecture.R](docs/figure/architecture.R)); [PDF](docs/figure/cogentic_architecture.pdf) and [SVG](docs/figure/cogentic_architecture.svg) versions are next to it.
 
 The UI is agy's native **swarm** (Board, Members, Graph, Overview). Runs spend the Antigravity
 quota of your Google AI plan (any tier, no API key needed). Nothing about models is hard-coded.
@@ -112,10 +117,16 @@ agy plugin validate . --strict
 
 ## Status
 
-The engine, the MCP protocol and the workflow script are tested: engine unit tests plus a
-simulated run of the workflow script against the real engine. **The plugin has not yet been run
-end-to-end on a live agy swarm**, because the development machine's region cannot reach the agy
-API. As in the paper, every proof the system produces needs checking by experts.
+The engine, the MCP protocol, the workflow script and the plugin layout are tested, with CI on
+Linux, macOS and Windows. Live tests in the Antigravity desktop app have confirmed:
+
+- plugin install and loading;
+- the MCP server (23 tools);
+- worker start-up and tool calls;
+- a full orchestrator turn.
+
+**No problem has yet been run to completion on a live swarm**, because the author's Ultra quota ran
+out during debugging. Test runs, issues and pull requests are very welcome. As in the paper, every proof the system produces needs checking by experts.
 
 ## Acknowledgements
 

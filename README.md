@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/runtime-agy--node,_zero_deps-339933?logo=nodedotjs&logoColor=white" alt="agy-node, zero dependencies">
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cetirzine/Cogentic-In-agy/ci.yml?logo=github&label=tests" alt="Tests"></a>
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/stargazers"><img src="https://img.shields.io/github/stars/Cetirzine/Cogentic-In-agy?logo=github" alt="Stars"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
 [English](README.en.md) · 论文：[arXiv:2609.40324](https://arxiv.org/abs/2609.40324)
@@ -15,6 +16,10 @@
 在 agy 里输入 `/cogentic <问题>`，当前会话就会成为一个证明发现小组的 orchestrator。它带着一群智能体，按论文第 2 节的流程一轮一轮地推进：
 文献检索 → 每个 prover 一份独立简报 → 多个 prover 并行写证明 → 单份审查和整轮交叉审查（两边都通过才算接受）→ auditor 把已确认的片段整理成引理，单独复核后写进 ledger → process advisor 调整下一轮的指令。
 有证明通过验证后，依次经过 comparator、formal writer 和最终审计，最后产出一份可以交给领域专家阅读的自包含文稿。
+
+<p align="center"><img src="docs/figure/cogentic_architecture.png" width="900" alt="Cogentic-In-agy 架构图"></p>
+
+架构图由 R 生成，源码在 [docs/figure/architecture.R](docs/figure/architecture.R)，另有 [PDF](docs/figure/cogentic_architecture.pdf) 和 [SVG](docs/figure/cogentic_architecture.svg) 版本。
 
 界面直接复用 agy 原生 **swarm** 的看板（Board / Members / Graph / Overview）。用的是你 Google AI 订阅（任意档位）里的 Antigravity 额度，不需要 API key。每个智能体用哪个模型，由 orchestrator 根据你的订阅当前提供的模型列表自行判断，见下文"模型怎么选"。
 
@@ -110,7 +115,8 @@ agy plugin validate . --strict
 
 ## 现状与限制
 
-- 状态引擎、MCP 协议和 workflow 脚本都有测试：引擎单元测试，加上把 workflow 脚本接到真实引擎上做的模拟运行。**还没有用真实的 agy swarm 跑过端到端。** 开发机所在地区调用不了 agy，所以第一次真实运行需要你在自己的环境里跑。如果遇到问题，`cogentic_status` 和 `log.jsonl` 会显示卡在哪一步。
+- 状态引擎、MCP 协议、workflow 脚本和插件结构都有测试，并在 Linux、macOS、Windows 上跑 CI。
+- 在 Antigravity 桌面版上实测过：插件安装、加载，MCP 服务（23 个工具），worker 的启动与工具调用，orchestrator 的完整一轮。**还没有在真实 swarm 里完整跑完一道题**：作者的 Ultra 额度在调试中用完了，欢迎帮忙试跑，并提 issue 和 pull request。遇到问题时，`cogentic_status` 和 `log.jsonl` 会显示卡在哪一步。
 - swarm 是 agy 的预览功能，接口以后可能会变。
 - 和论文一样，产出的证明都必须经过领域专家核对。
 

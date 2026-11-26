@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='518.74pt' height='362.83pt' viewBox='0 0 518.74 362.83'>
+<g class='svglite'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+    .svglite g.glyphgroup path {
+      fill: inherit;
+      stroke: none;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw1MTguNzR8MC4wMHwzNjIuODM='>
+    <rect x='0.00' y='0.00' width='518.74' height='362.83' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw1MTguNzR8MC4wMHwzNjIuODM=)'>
+<rect x='0.000000000000064' y='0.000000000000057' width='518.74' height='362.83' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF;' />
+<text x='11.34' y='14.47' style='font-size: 9.00px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='269.09px' lengthAdjust='spacingAndGlyphs'>Cogentic in Antigravity: automated proof discovery as a native swarm</text>
+<text x='11.34' y='27.08' style='font-size: 5.80px;fill: #6B6B6B; font-family: "Times New Roman";' textLength='411.28px' lengthAdjust='spacingAndGlyphs'>One command, /cogentic &lt;problem&gt;, turns the user's own conversation into the coordinator of a swarm that reproduces the Cogentic harness of Cai et al. (2026) round by round.</text>
+<text x='11.34' y='50.64' style='font-size: 8.00px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='4.00px' lengthAdjust='spacingAndGlyphs'>a</text>
+<text x='21.54' y='50.58' style='font-size: 6.40px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='34.11px' lengthAdjust='spacingAndGlyphs'>Coordinator</text>
+<rect x='11.34' y='59.53' width='121.89' height='28.35' style='stroke-width: 0.75; stroke: #272727; stroke-linecap: butt; stroke-linejoin: miter; fill: #FFFFFF;' />
+<text x='15.87' y='67.31' style='font-size: 6.20px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='10.31px' lengthAdjust='spacingAndGlyphs'>You</text>
+<text x='15.87' y='76.00' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='43.41px' lengthAdjust='spacingAndGlyphs'>/cogentic &lt;problem&gt;</text>
+<text x='15.87' y='82.55' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='59.62px' lengthAdjust='spacingAndGlyphs'>wishes in plain words, if any</text>
+<line x1='72.28' y1='87.87' x2='72.28' y2='98.36' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='70.44,95.17 72.28,98.36 74.13,95.17 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='11.34' y='99.21' width='121.89' height='62.36' style='stroke-width: 0.75; stroke: #3182BD; stroke-linecap: butt; stroke-linejoin: miter; fill: #E8F1F9;' />
+<text x='15.87' y='106.99' style='font-size: 6.20px; font-weight: bold;fill: #3182BD; font-family: "Times New Roman";' textLength='106.66px' lengthAdjust='spacingAndGlyphs'>Main conversation = swarm coordinator</text>
+<text x='15.87' y='115.69' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='80.88px' lengthAdjust='spacingAndGlyphs'>creates the swarm itself; no extra agent</text>
+<text x='15.87' y='122.24' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='73.72px' lengthAdjust='spacingAndGlyphs'>plans directions from protocol facts</text>
+<text x='15.87' y='128.79' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='73.45px' lengthAdjust='spacingAndGlyphs'>starts, waits for and judges workers</text>
+<text x='15.87' y='135.34' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='73.58px' lengthAdjust='spacingAndGlyphs'>kills finished workers to save quota</text>
+<text x='15.87' y='141.89' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='67.22px' lengthAdjust='spacingAndGlyphs'>never does mathematics (Sec. 2)</text>
+<line x1='72.28' y1='161.57' x2='72.28' y2='172.06' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='74.13,164.77 72.28,161.57 70.44,164.77 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<polygon points='70.44,168.87 72.28,172.06 74.13,168.87 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='11.34' y='172.91' width='121.89' height='56.69' style='stroke-width: 0.75; stroke: #3182BD; stroke-linecap: butt; stroke-linejoin: miter; fill: #E8F1F9;' />
+<text x='15.87' y='180.70' style='font-size: 6.20px; font-weight: bold;fill: #3182BD; font-family: "Times New Roman";' textLength='70.36px' lengthAdjust='spacingAndGlyphs'>Quota-aware model choice</text>
+<text x='15.87' y='189.39' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='69.59px' lengthAdjust='spacingAndGlyphs'>reads the plan's models and quota</text>
+<text x='15.87' y='195.94' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='71.56px' lengthAdjust='spacingAndGlyphs'>sizes the run: budget, rounds, slots</text>
+<text x='15.87' y='202.49' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='64.95px' lengthAdjust='spacingAndGlyphs'>picks a model for every worker</text>
+<text x='15.87' y='209.04' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='62.22px' lengthAdjust='spacingAndGlyphs'>adapts to per-model outcomes</text>
+<text x='15.87' y='215.60' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='66.34px' lengthAdjust='spacingAndGlyphs'>resizes the run as quota changes</text>
+<rect x='11.34' y='240.94' width='121.89' height='34.02' style='stroke-width: 0.75; stroke: #6B6B6B; stroke-linecap: butt; stroke-linejoin: miter; fill: #F3F3F3;' />
+<text x='15.87' y='248.73' style='font-size: 6.20px; font-weight: bold;fill: #6B6B6B; font-family: "Times New Roman";' textLength='74.77px' lengthAdjust='spacingAndGlyphs'>Swarm board and Overview</text>
+<text x='15.87' y='257.42' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='71.48px' lengthAdjust='spacingAndGlyphs'>workers post @coordinator [done]</text>
+<text x='15.87' y='263.97' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='67.23px' lengthAdjust='spacingAndGlyphs'>narrator maintains the Overview</text>
+<line x1='72.28' y1='229.61' x2='72.28' y2='240.09' style='stroke-width: 0.85; stroke: #9A9A9A; stroke-linecap: butt;' />
+<polygon points='74.13,232.80 72.28,229.61 70.44,232.80 ' style='stroke-width: 0.85; stroke: #9A9A9A; stroke-linecap: butt; fill: #9A9A9A;' />
+<polygon points='70.44,236.90 72.28,240.09 74.13,236.90 ' style='stroke-width: 0.85; stroke: #9A9A9A; stroke-linecap: butt; fill: #9A9A9A;' />
+<line x1='133.23' y1='130.39' x2='148.54' y2='130.39' style='stroke-width: 1.07; stroke: #3182BD; stroke-linecap: butt;' />
+<polygon points='145.34,132.24 148.54,130.39 145.34,128.55 ' style='stroke-width: 1.07; stroke: #3182BD; stroke-linecap: butt; fill: #3182BD;' />
+<text transform='translate(142.97,148.82) rotate(-90)' text-anchor='middle' style='font-size: 4.60px;fill: #3182BD; font-family: "Times New Roman";' textLength='24.34px' lengthAdjust='spacingAndGlyphs'>adds workers</text>
+<text x='148.82' y='50.64' style='font-size: 8.00px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='4.44px' lengthAdjust='spacingAndGlyphs'>b</text>
+<text x='159.02' y='50.58' style='font-size: 6.40px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='203.58px' lengthAdjust='spacingAndGlyphs'>One round of workers (Sec. 2.1-2.4), repeated; then consolidation (Sec. 2.5)</text>
+<rect x='150.24' y='59.53' width='221.10' height='25.51' style='stroke-width: 0.75; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='154.77' y='67.31' style='font-size: 6.20px; font-weight: bold;fill: #33A08F; font-family: "Times New Roman";' textLength='54.27px' lengthAdjust='spacingAndGlyphs'>Literature reviewers</text>
+<text x='154.77' y='76.00' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='182.94px' lengthAdjust='spacingAndGlyphs'>definitions, exact theorem statements, known barriers; re-dispatched when attempts stall</text>
+<line x1='260.79' y1='85.04' x2='260.79' y2='92.69' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='258.94,89.50 260.79,92.69 262.63,89.50 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='93.54' width='221.10' height='25.51' style='stroke-width: 0.75; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='154.77' y='101.33' style='font-size: 6.20px; font-weight: bold;fill: #33A08F; font-family: "Times New Roman";' textLength='88.19px' lengthAdjust='spacingAndGlyphs'>Summarizers, one per prover slot</text>
+<text x='154.77' y='110.02' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='191.61px' lengthAdjust='spacingAndGlyphs'>independent briefings from the record, ledger and literature; long documents passed as paths</text>
+<line x1='260.79' y1='119.06' x2='260.79' y2='126.71' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='258.94,123.52 260.79,126.71 262.63,123.52 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='127.56' width='221.10' height='39.69' style='stroke-width: 0.75; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='154.77' y='135.34' style='font-size: 6.20px; font-weight: bold;fill: #33A08F; font-family: "Times New Roman";' textLength='49.05px' lengthAdjust='spacingAndGlyphs'>Provers in parallel</text>
+<text x='154.77' y='144.03' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='126.11px' lengthAdjust='spacingAndGlyphs'>assigned a direction, not a method; diverse models per round</text>
+<rect x='158.74' y='149.67' width='42.52' height='13.04' style='stroke-width: 0.53; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #CFEAE4;' />
+<text x='180.00' y='156.10' text-anchor='middle' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='13.20px' lengthAdjust='spacingAndGlyphs'>draft 1</text>
+<rect x='211.18' y='149.67' width='42.52' height='13.04' style='stroke-width: 0.53; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #B8E0D8;' />
+<text x='232.44' y='156.10' text-anchor='middle' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='13.20px' lengthAdjust='spacingAndGlyphs'>draft 2</text>
+<rect x='263.62' y='149.67' width='42.52' height='13.04' style='stroke-width: 0.53; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #CFEAE4;' />
+<text x='284.88' y='156.10' text-anchor='middle' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='13.20px' lengthAdjust='spacingAndGlyphs'>draft 3</text>
+<rect x='316.06' y='149.67' width='42.52' height='13.04' style='stroke-width: 0.53; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #B8E0D8;' />
+<text x='337.32' y='156.10' text-anchor='middle' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='13.20px' lengthAdjust='spacingAndGlyphs'>draft k</text>
+<line x1='204.09' y1='167.24' x2='204.09' y2='180.57' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='202.25,177.38 204.09,180.57 205.94,177.38 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<line x1='317.48' y1='167.24' x2='317.48' y2='180.57' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='315.64,177.38 317.48,180.57 319.32,177.38 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='181.42' width='104.88' height='34.02' style='stroke-width: 0.75; stroke: #D24B40; stroke-linecap: butt; stroke-linejoin: miter; fill: #FBEAE8;' />
+<text x='154.77' y='189.20' style='font-size: 6.20px; font-weight: bold;fill: #D24B40; font-family: "Times New Roman";' textLength='57.70px' lengthAdjust='spacingAndGlyphs'>Solo verifier per draft</text>
+<text x='154.77' y='197.89' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='50.08px' lengthAdjust='spacingAndGlyphs'>adversarial, line by line;</text>
+<text x='154.77' y='204.44' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='46.61px' lengthAdjust='spacingAndGlyphs'>every citation checked</text>
+<rect x='266.46' y='181.42' width='104.88' height='34.02' style='stroke-width: 0.75; stroke: #D24B40; stroke-linecap: butt; stroke-linejoin: miter; fill: #FBEAE8;' />
+<text x='270.99' y='189.20' style='font-size: 6.20px; font-weight: bold;fill: #D24B40; font-family: "Times New Roman";' textLength='64.02px' lengthAdjust='spacingAndGlyphs'>Cross verifier per round</text>
+<text x='270.99' y='197.89' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='45.48px' lengthAdjust='spacingAndGlyphs'>all drafts side by side;</text>
+<text x='270.99' y='204.44' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='55.88px' lengthAdjust='spacingAndGlyphs'>shared blind spots, ranking</text>
+<text x='260.79' y='223.82' text-anchor='middle' style='font-size: 5.40px; font-weight: bold;fill: #D24B40; font-family: "Times New Roman";' textLength='79.53px' lengthAdjust='spacingAndGlyphs'>accepted only if both verifiers pass</text>
+<line x1='260.79' y1='229.04' x2='260.79' y2='234.43' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='258.94,231.23 260.79,234.43 262.63,231.23 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='235.28' width='221.10' height='25.51' style='stroke-width: 0.75; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='154.77' y='243.06' style='font-size: 6.20px; font-weight: bold;fill: #33A08F; font-family: "Times New Roman";' textLength='97.17px' lengthAdjust='spacingAndGlyphs'>Auditor and isolated lemma verifiers</text>
+<text x='154.77' y='251.75' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='193.89px' lengthAdjust='spacingAndGlyphs'>confirmed fragments restated as self-contained lemmas; only re-verified ones enter the ledger</text>
+<line x1='260.79' y1='260.79' x2='260.79' y2='268.44' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='258.94,265.25 260.79,268.44 262.63,265.25 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='269.29' width='221.10' height='25.51' style='stroke-width: 0.75; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='154.77' y='277.07' style='font-size: 6.20px; font-weight: bold;fill: #33A08F; font-family: "Times New Roman";' textLength='40.97px' lengthAdjust='spacingAndGlyphs'>Process advisor</text>
+<text x='154.77' y='285.77' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='183.39px' lengthAdjust='spacingAndGlyphs'>reviews verification logs across the run; standing instructions; no mathematical opinions</text>
+<polyline points='371.34,282.05 379.84,282.05 379.84,106.30 373.04,106.30 ' style='stroke-width: 0.96; stroke: #33A08F; stroke-linecap: butt;' />
+<polygon points='376.23,104.46 373.04,106.30 376.23,108.14 ' style='stroke-width: 0.96; stroke: #33A08F; stroke-linecap: butt; fill: #33A08F;' />
+<text transform='translate(385.97,235.28) rotate(-90)' text-anchor='middle' style='font-size: 4.80px;fill: #33A08F; font-family: "Times New Roman";' textLength='20.69px' lengthAdjust='spacingAndGlyphs'>next round</text>
+<line x1='260.79' y1='294.80' x2='260.79' y2='302.46' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt;' />
+<polygon points='258.94,299.27 260.79,302.46 262.63,299.27 ' style='stroke-width: 0.85; stroke: #6B6B6B; stroke-linecap: butt; fill: #6B6B6B;' />
+<rect x='150.24' y='303.31' width='221.10' height='22.68' style='stroke-width: 0.75; stroke: #272727; stroke-linecap: butt; stroke-linejoin: miter; fill: #FFFFFF;' />
+<text x='154.77' y='311.09' style='font-size: 6.20px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='36.78px' lengthAdjust='spacingAndGlyphs'>Consolidation</text>
+<text x='154.77' y='319.78' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='157.09px' lengthAdjust='spacingAndGlyphs'>comparator  →  formal writer  →  final audit  →  self-contained manuscript</text>
+<text x='391.18' y='50.64' style='font-size: 8.00px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='3.55px' lengthAdjust='spacingAndGlyphs'>c</text>
+<text x='401.39' y='50.58' style='font-size: 6.40px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='33.20px' lengthAdjust='spacingAndGlyphs'>State engine</text>
+<rect x='391.18' y='59.53' width='116.22' height='124.72' style='stroke-width: 0.75; stroke: #E28E2C; stroke-linecap: butt; stroke-linejoin: miter; fill: #FCF1E3;' />
+<text x='395.72' y='67.31' style='font-size: 6.20px; font-weight: bold;fill: #E28E2C; font-family: "Times New Roman";' textLength='79.64px' lengthAdjust='spacingAndGlyphs'>MCP server cogentic_cogentic</text>
+<text x='395.72' y='76.00' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='61.45px' lengthAdjust='spacingAndGlyphs'>agy-node, zero dependencies;</text>
+<text x='395.72' y='82.55' style='font-size: 5.20px;fill: #272727; font-family: "Times New Roman";' textLength='71.80px' lengthAdjust='spacingAndGlyphs'>shared run directory, locked writes</text>
+<text x='395.72' y='96.29' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='33.27px' lengthAdjust='spacingAndGlyphs'>.cogentic/&lt;run&gt;/</text>
+<text x='395.72' y='103.01' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='48.77px' lengthAdjust='spacingAndGlyphs'>  problem.md, literature/</text>
+<text x='395.72' y='109.73' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='62.91px' lengthAdjust='spacingAndGlyphs'>  rounds/r&lt;n&gt;/ briefings, drafts,</text>
+<text x='395.72' y='116.45' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='23.34px' lengthAdjust='spacingAndGlyphs'>      verdicts</text>
+<text x='395.72' y='123.17' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='72.12px' lengthAdjust='spacingAndGlyphs'>  record.jsonl  (attempts, objections)</text>
+<text x='395.72' y='129.89' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='52.80px' lengthAdjust='spacingAndGlyphs'>  ledger  (verified lemmas,</text>
+<text x='395.72' y='136.61' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='41.53px' lengthAdjust='spacingAndGlyphs'>      excluded claims)</text>
+<text x='395.72' y='143.33' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='54.08px' lengthAdjust='spacingAndGlyphs'>  instructions.md  (advisor)</text>
+<text x='395.72' y='150.05' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='42.94px' lengthAdjust='spacingAndGlyphs'>  final/manuscript.md</text>
+<rect x='391.18' y='195.59' width='116.22' height='130.39' style='stroke-width: 0.75; stroke: #E28E2C; stroke-linecap: butt; stroke-linejoin: miter; fill: #FFFFFF;' />
+<text x='395.72' y='203.37' style='font-size: 6.20px; font-weight: bold;fill: #E28E2C; font-family: "Times New Roman";' textLength='44.58px' lengthAdjust='spacingAndGlyphs'>Enforced in code</text>
+<text x='395.72' y='212.51' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='65.64px' lengthAdjust='spacingAndGlyphs'>• acceptance needs both verifiers</text>
+<text x='395.72' y='219.59' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='72.89px' lengthAdjust='spacingAndGlyphs'>• a failing verdict states its objection</text>
+<text x='395.72' y='226.67' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='67.73px' lengthAdjust='spacingAndGlyphs'>• ledger only after isolated checks</text>
+<text x='395.72' y='233.75' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='69.38px' lengthAdjust='spacingAndGlyphs'>• dead ends need verified evidence</text>
+<text x='395.72' y='240.83' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='53.16px' lengthAdjust='spacingAndGlyphs'>• auditor and advisor close</text>
+<text x='395.72' y='247.91' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='27.78px' lengthAdjust='spacingAndGlyphs'>   every round</text>
+<text x='395.72' y='254.99' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='73.16px' lengthAdjust='spacingAndGlyphs'>• comparator → writer → final audit</text>
+<text x='395.72' y='262.07' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='44.27px' lengthAdjust='spacingAndGlyphs'>• budget and user pins</text>
+<text x='395.72' y='269.15' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='62.45px' lengthAdjust='spacingAndGlyphs'>• calls and outcomes per model</text>
+<line x1='371.34' y1='72.28' x2='390.05' y2='72.28' style='stroke-width: 0.75; stroke: #E28E2C; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<polygon points='386.86,74.13 390.05,72.28 386.86,70.44 ' style='stroke-width: 0.75; stroke: #E28E2C; stroke-dasharray: 2.00,2.00; stroke-linecap: butt; fill: #E28E2C;' />
+<line x1='371.34' y1='314.65' x2='390.05' y2='314.65' style='stroke-width: 0.75; stroke: #E28E2C; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<polygon points='386.86,316.49 390.05,314.65 386.86,312.80 ' style='stroke-width: 0.75; stroke: #E28E2C; stroke-dasharray: 2.00,2.00; stroke-linecap: butt; fill: #E28E2C;' />
+<text x='449.29' y='190.95' text-anchor='middle' style='font-size: 4.80px;fill: #E28E2C; font-family: "Times New Roman";' textLength='63.42px' lengthAdjust='spacingAndGlyphs'>workers call the cogentic_* tools</text>
+<text x='395.72' y='279.95' style='font-size: 5.40px; font-weight: bold;fill: #272727; font-family: "Times New Roman";' textLength='25.53px' lengthAdjust='spacingAndGlyphs'>Colour key</text>
+<rect x='396.28' y='285.17' width='9.64' height='5.95' style='stroke-width: 0.64; stroke: #3182BD; stroke-linecap: butt; stroke-linejoin: miter; fill: #E8F1F9;' />
+<text x='409.89' y='288.76' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='64.47px' lengthAdjust='spacingAndGlyphs'>coordinator (main conversation)</text>
+<rect x='396.28' y='294.52' width='9.64' height='5.95' style='stroke-width: 0.64; stroke: #33A08F; stroke-linecap: butt; stroke-linejoin: miter; fill: #E6F4F1;' />
+<text x='409.89' y='298.12' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='30.72px' lengthAdjust='spacingAndGlyphs'>swarm workers</text>
+<rect x='396.28' y='303.87' width='9.64' height='5.95' style='stroke-width: 0.64; stroke: #D24B40; stroke-linecap: butt; stroke-linejoin: miter; fill: #FBEAE8;' />
+<text x='409.89' y='307.47' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='32.64px' lengthAdjust='spacingAndGlyphs'>verification gate</text>
+<rect x='396.28' y='313.23' width='9.64' height='5.95' style='stroke-width: 0.64; stroke: #E28E2C; stroke-linecap: butt; stroke-linejoin: miter; fill: #FCF1E3;' />
+<text x='409.89' y='316.82' style='font-size: 5.00px;fill: #272727; font-family: "Times New Roman";' textLength='23.75px' lengthAdjust='spacingAndGlyphs'>state engine</text>
+<line x1='11.34' y1='333.92' x2='507.40' y2='333.92' style='stroke-width: 0.53; stroke: #9A9A9A; stroke-linecap: butt;' />
+<text x='11.34' y='340.85' style='font-size: 4.90px;fill: #6B6B6B; font-family: "Times New Roman";' textLength='373.39px' lengthAdjust='spacingAndGlyphs'>Code: github.com/Cetirzine/Cogentic-In-agy (MIT licence). Independent implementation from the paper's description; no official code was released. Not affiliated with the authors or Google.</text>
+<text x='11.34' y='351.33' style='font-size: 4.90px;fill: #6B6B6B; font-family: "Times New Roman";' textLength='354.09px' lengthAdjust='spacingAndGlyphs'>Method: Cai, Y., Gupta, V., Jiang, Y., Liaw, C., Mehta, A., Velegkas, G. &amp; Wang, D. Cogentic: Multi-Agent Orchestration for Automated Proof Discovery. arXiv:2609.40324 (2026).</text>
+</g>
+</g>
+</svg>
