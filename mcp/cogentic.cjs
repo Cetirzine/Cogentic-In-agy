@@ -14,8 +14,10 @@ function runTool(name, args) {
   try {
     return { ok: true, value: call(name, args) };
   } catch (e) {
-    if (e instanceof CogenticError) return { ok: false, error: e.message };
-    return { ok: false, error: `internal error: ${e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e}` };
+    // "[cogentic]" marks errors from the engine itself, so a caller can tell a protocol error
+    // apart from a host that cannot reach the tool.
+    if (e instanceof CogenticError) return { ok: false, error: `[cogentic] ${e.message}` };
+    return { ok: false, error: `[cogentic] internal error: ${e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e}` };
   }
 }
 

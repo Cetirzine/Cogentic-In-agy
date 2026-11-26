@@ -11,10 +11,38 @@ import json
 import os
 
 RUN = args["run_dir"]
-ROLES_DIR = args.get("roles_dir", "")
+
+
+def _find_roles_dir():
+    """The cogentic-roles/roles folder: from Args, else the standard install places (CLI and desktop app)."""
+    if args.get("roles_dir"):
+        return args["roles_dir"]
+    home = os.path.expanduser("~")
+    for base in (os.environ.get("COGENTIC_PLUGINS_DIR", ""), os.path.join(home, ".gemini", "config", "plugins")):
+        if not base:
+            continue
+        cand = os.path.join(base, "cogentic", "skills", "cogentic-roles", "roles")
+        if os.path.isdir(cand):
+            return cand
+    for ws in WORKSPACES if "WORKSPACES" in globals() else ():
+        for dot in (".agents", ".agent", "_agents", "_agent"):
+            cand = os.path.join(ws, dot, "plugins", "cogentic", "skills", "cogentic-roles", "roles")
+            if os.path.isdir(cand):
+                return cand
+    return ""
+
+
+ROLES_DIR = _find_roles_dir()
 MAX_AUDITS = int(args.get("max_audits", 3))
 DONE = {"type": "string"}
+# Agents run as the plugin's `cogentic-worker` type, not "self": a "self" agent inherits this
+# conversation's configuration, including a Plan/Execute (planner + executor) setup whose
+# plan-review hook then blocks every tool call, `finish` included. If the host does not know the
+# custom type, fall back to "self".
+_worker = {"type": args.get("agent_type", "cogentic-worker")}
+_direct = {"ok": True}  # whether call_tool reaches the cogentic MCP tools in this host
 _pending_charges = []
+ENGINE_ERROR = "[cogentic]"  # marks protocol errors raised by the engine itself
 
 
 def state():
@@ -33,26 +61,47 @@ def role_path(name):
 
 def brief(role, role_file, assignment):
     return (
-        f"Cogentic {role}. Load the cogentic-roles skill and follow {role_path(role_file)}.\n"
+        f"Cogentic {role}. Read and follow {role_path(role_file)} (from the cogentic-roles skill).\n"
         f"run_dir: {RUN}\nAssignment: {assignment}\n"
         "Record your output with your role's cogentic_* tool, then call finish with a one-line summary."
     )
 
 
+def _unknown_type(e):
+    m = str(getattr(e, "message", e)).lower()
+    return _worker["type"] != "self" and ("agent" in m or "type" in m) and any(w in m for w in ("unknown", "not found", "no such", "not available", "invalid"))
+
+
+async def spawn(prompt, schema, role):
+    """Start one agent on the worker type, falling back to "self" once if the host lacks the type."""
+    try:
+        return await agent(prompt, schema=schema, role=role, type_name=_worker["type"], model="inherit")
+    except Exception as e:
+        if not _unknown_type(e):
+            raise
+        log(f"agent type {_worker['type']} unavailable ({e}); using self")
+        _worker["type"] = "self"
+        return await agent(prompt, schema=schema, role=role, type_name="self", model="inherit")
+
+
 async def tool(name, **kw):
     """Call a cogentic MCP tool: directly when call_tool can reach it, else through a one-step clerk agent."""
-    try:
-        out = await call_tool(name, **kw)
-        return json.loads(out) if out.strip().startswith("{") else out
-    except NameError:
-        pass
-    except Exception as e:  # ToolError: a protocol error is real, a missing/denied tool falls back
-        if not getattr(e, "denied", False) and "not" not in str(getattr(e, "message", e)).lower():
-            raise
-    res = await agent(
-        f"Call the MCP tool `{name}` with exactly these arguments and nothing else:\n{json.dumps(kw)}\n"
+    if _direct["ok"]:
+        try:
+            out = await call_tool(name, **kw)
+            return json.loads(out) if out.strip().startswith("{") else out
+        except NameError:
+            _direct["ok"] = False
+        except Exception as e:
+            if ENGINE_ERROR in str(getattr(e, "message", e)):
+                raise  # a real protocol error from the engine
+            log(f"call_tool cannot reach {name} here ({e}); using clerk agents")
+            _direct["ok"] = False
+    res = await spawn(
+        f"Call the MCP tool `{name}` (from the Cogentic plugin's MCP server, possibly listed under a namespace such as "
+        f"cogentic_cogentic) with exactly these arguments and nothing else:\n{json.dumps(kw)}\n"
         "Then call finish with the tool's output verbatim (or 'ERROR: <message>' if it failed).",
-        schema=DONE, role=f"clerk: {name}", model="inherit")
+        DONE, f"clerk: {name}")
     if res.startswith("ERROR:"):
         raise RuntimeError(res)
     try:
@@ -62,19 +111,37 @@ async def tool(name, **kw):
 
 
 async def charge(role, calls=1):
-    try:
-        await call_tool("cogentic_charge", run_dir=RUN, role=role, calls=calls)
-    except Exception:
-        _pending_charges.append((role, calls))
+    if _direct["ok"]:
+        try:
+            await call_tool("cogentic_charge", run_dir=RUN, role=role, calls=calls)
+            return
+        except NameError:
+            _direct["ok"] = False
+        except Exception as e:
+            if ENGINE_ERROR in str(getattr(e, "message", e)):
+                raise
+            _direct["ok"] = False
+    _pending_charges.append((role, calls))
 
 
 async def run_agent(role, role_file, assignment, title):
     await charge(role)
     try:
-        return await agent(brief(role, role_file, assignment), schema=DONE, role=title, model="inherit")
+        return await spawn(brief(role, role_file, assignment), DONE, title)
     except Exception as e:  # one failed agent must not cancel its siblings in parallel()
         log(f"{title} failed: {e}")
         return None
+
+
+PLAN_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "action": {"type": "string", "enum": ["opened", "literature", "consolidate", "stop"]},
+        "literature_topics": {"type": "array", "items": {"type": "string"}},
+        "reason": {"type": "string"},
+    },
+    "required": ["action", "reason"],
+}
 
 
 async def plan(note):
@@ -84,18 +151,13 @@ async def plan(note):
         pending = f"\nFirst call cogentic_charge{{run_dir, role:'workflow', calls:{total}}} for agents already started."
         _pending_charges.clear()
     await charge("orchestrator")
-    return await agent(
-        brief("orchestrator (workflow mode)", "orchestrator", note) + pending,
-        schema={
-            "type": "object",
-            "properties": {
-                "action": {"type": "string", "enum": ["opened", "literature", "consolidate", "stop"]},
-                "literature_topics": {"type": "array", "items": {"type": "string"}},
-                "reason": {"type": "string"},
-            },
-            "required": ["action", "reason"],
-        },
-        role="Orchestrator", model="inherit")
+    prompt = brief("orchestrator (workflow mode)", "orchestrator", note) + pending
+    for attempt in range(2):
+        try:
+            return await spawn(prompt, PLAN_SCHEMA, "Orchestrator")
+        except Exception as e:
+            log(f"orchestrator attempt {attempt + 1} failed: {e}")
+    return {"action": "stop", "reason": "the orchestrator agent failed twice"}
 
 
 async def literature(topics, tag):

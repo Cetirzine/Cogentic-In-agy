@@ -43,8 +43,8 @@ as soon as they appear in the list. See [docs/MODELS.md](docs/MODELS.md).
 
 ## Install
 
-You need Antigravity CLI, signed in. Swarm mode needs agy 1.5.5 or later, and `run_workflow` needs
-1.5.9 or later.
+Works in the **Antigravity desktop app** and in the **Antigravity CLI (`agy`)**: either one,
+signed in. In the CLI, swarm mode needs agy 1.5.5 or later and `run_workflow` needs 1.5.9 or later.
 
 ```bash
 git clone git@github.com:Cetirzine/Cogentic-In-agy.git
@@ -54,7 +54,22 @@ git clone git@github.com:Cetirzine/Cogentic-In-agy.git
 cd Cogentic-In-agy && ./scripts/install.sh
 ```
 
-On Windows, run `scripts\install.ps1`. Restart agy afterwards.
+On Windows, run `scripts\install.ps1`.
+
+The installer picks the method by itself:
+
+- **With the `agy` CLI:** it runs `agy plugin validate`, then `agy plugin install`. Restart agy
+  afterwards.
+- **With only the desktop app** (or with `--copy` / `-Copy`): it copies the plugin into
+  `~/.gemini/config/plugins/cogentic`. It stages the copy next to that folder and swaps it in
+  whole, and it never replaces a folder that holds a different plugin. The desktop app loads the
+  plugin within seconds, with no restart. Manage it on the app's Customizations page.
+
+In the desktop app, type `/cogentic <problem>`. If the conversation has no swarm tools, open a new
+conversation with `/swarm` and say `use the cogentic skill on: <problem>`, or use
+`--mode workflow`. In **Plan/Execute** (planner + executor) conversations, the orchestrator first
+asks you to approve a run plan. Workflow agents run as the plugin's `cogentic-worker` agent type,
+so the main conversation's plan reviews cannot block them.
 
 ## Use
 
@@ -76,7 +91,7 @@ advisor's instructions, and `final/manuscript.md`.
 ## Development
 
 ```bash
-node --test tests/engine.test.cjs
+node --test tests/engine.test.cjs tests/install.test.cjs
 ```
 
 ```bash

@@ -3,7 +3,12 @@
 Use workflow mode when the swarm tools (`swarm`, `post_message`, `read_board`, `swarm_wait`) are
 not available, or when the user asked for `--mode workflow`. It runs the same protocol through
 Antigravity's built-in `run_workflow` engine. Each agent appears as a card in the workflow step,
-in place of the swarm board.
+in place of the swarm board. It works in both the Antigravity desktop app and the `agy` CLI.
+
+**Agent type.** The script starts every agent as the plugin's `cogentic-worker` agent type, not
+`self`. A `self` agent would inherit this conversation's configuration, including a Plan/Execute
+mode whose plan reviews block a workflow agent's tools and `finish`. If the host does not know
+`cogentic-worker`, the script falls back to `self` and logs it.
 
 **Models.** Workflow agents can only choose a model tier, so every agent inherits this
 conversation's model, and you cannot choose models per role. Check the conversation's model
@@ -26,7 +31,9 @@ model choice is only available in swarm mode.
    ```
 
    This skill's directory is the folder that holds this `SKILL.md`. The `cogentic-roles` skill sits
-   next to it, under the plugin's `skills/` folder.
+   next to it, under the plugin's `skills/` folder. A global install puts it at
+   `~/.gemini/config/plugins/cogentic/skills/`. If you leave `roles_dir` out, the script looks
+   there and in the workspace's `.agents/plugins/`.
 4. The workflow runs in the background, and you are notified when it ends. In the meantime you can
    answer the user from `cogentic_status`.
 5. When it ends, report as in §6 of the main skill. If it failed partway, `cogentic_status` shows

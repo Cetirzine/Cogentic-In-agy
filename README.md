@@ -22,7 +22,7 @@
 
 ## 安装
 
-需要 Antigravity CLI（`agy`）并已登录。swarm 需要 1.5.5 及以上版本，`run_workflow` 需要 1.5.9 及以上版本。
+支持 **Antigravity 桌面版**和 **Antigravity CLI（`agy`）**，装一个就行，登录同一个 Google 账号即可。CLI 下 swarm 需要 1.5.5 及以上版本，`run_workflow` 需要 1.5.9 及以上版本。
 
 ```bash
 git clone git@github.com:Cetirzine/Cogentic-In-agy.git
@@ -32,7 +32,17 @@ git clone git@github.com:Cetirzine/Cogentic-In-agy.git
 cd Cogentic-In-agy && ./scripts/install.sh
 ```
 
-Windows 上用 PowerShell 运行 `scripts\install.ps1`。安装脚本会先执行 `agy plugin validate`，再执行 `agy plugin install`。装完需要重启 agy。
+Windows 上用 PowerShell 运行 `scripts\install.ps1`。
+
+安装脚本会自动判断用哪种方式：
+
+- **装了 `agy` CLI**：先执行 `agy plugin validate`，再执行 `agy plugin install`。装完需要重启 agy。
+- **只装了桌面版**（或者加上 `--copy` / `-Copy` 参数）：把插件复制到 `~/.gemini/config/plugins/cogentic`。脚本会先在旁边的临时目录里准备好，再整体替换旧版本，并且会先确认这个目录里原来装的确实是 Cogentic，不会覆盖别的插件。复制完桌面版几秒内就会自动加载，不用重启。之后可以在桌面版的 Customizations 页面里查看、停用或卸载它。
+
+### 桌面版使用注意
+
+- 在对话里输入 `/cogentic <问题>` 即可。如果提示当前对话没有 swarm 工具，就新开一个对话，先输入 `/swarm`，再说"用 cogentic 技能解决：<问题>"，或者改用 `--mode workflow`。
+- 对话开着 **Plan/Execute（规划 + 执行双模型）模式**时，orchestrator 会先给出运行计划，等你批准后再开跑。workflow 模式启动的子智能体用的是插件自带的 `cogentic-worker` 类型，不受主对话计划审批的影响，不会卡死。
 
 ## 使用
 
@@ -80,7 +90,7 @@ Google 发布新模型（包括以后的 Gemini 5）时，只要它出现在模�
 ## 开发
 
 ```bash
-node --test tests/engine.test.cjs
+node --test tests/engine.test.cjs tests/install.test.cjs
 ```
 
 ```bash

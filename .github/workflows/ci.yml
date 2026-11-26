@@ -15,4 +15,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: node --test tests/engine.test.cjs
+      - run: node --test tests/install.test.cjs
       - run: python -I tests/workflow_sim.py

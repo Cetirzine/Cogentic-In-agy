@@ -46,6 +46,20 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
   board, tell them to start the conversation with `/swarm` and then say `use the cogentic skill on:
   <problem>`. That loads the swarm tools, and this skill works the same way.
 
+## Host notes (Antigravity desktop app and CLI)
+
+- The skill works the same way in the Antigravity desktop app and in the `agy` CLI. The plugin's
+  MCP server may appear under a namespace such as `cogentic_cogentic`. The tools are still the
+  `cogentic_*` tools.
+- If this conversation runs in **Plan/Execute mode** (separate planner and executor models), the
+  host expects a plan before tools run. Write a short run plan (the problem, the mode,
+  `--priority`, the budget and the first steps), get it approved the way that mode requires, and
+  then carry it out. Do not let a plan review stall the run halfway. Agents the workflow starts run
+  as the plugin's `cogentic-worker` agent type, so they are not subject to this conversation's
+  plan reviews.
+- If the swarm tools are missing in the desktop app, start a new conversation with `/swarm`, then
+  say `use the cogentic skill on: <problem>`, or use workflow mode.
+
 ## 2. Set up
 
 1. `cogentic_init` with `workspace` set to the absolute path of the primary workspace (or of the

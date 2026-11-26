@@ -113,9 +113,16 @@ class World:
         return "done"
 
 
-async def run_script(world, with_call_tool=True):
+async def run_script(world, with_call_tool=True, known_types=("self", "cogentic-worker"), call_tool_reaches=True):
+    world.types = []
+
     def agent(prompt=None, schema=None, role=None, type_name="self", workspace="inherit", model=None):
-        assert model == "inherit", "workflow agents must inherit the conversation's (Gemini 4) model"
+        assert model == "inherit", "workflow agents can only inherit the conversation's model"
+        if type_name not in known_types:
+            async def unknown():
+                raise ToolError(f"unknown agent type {type_name!r}")
+            return unknown()
+        world.types.append(type_name)
         return world.act(prompt, role)
 
     async def parallel(items, fn):
@@ -129,6 +136,8 @@ async def run_script(world, with_call_tool=True):
     }
     if with_call_tool:
         async def call_tool(name, **kw):
+            if not call_tool_reaches:  # e.g. the host namespaces plugin MCP tools differently
+                raise ToolError(f"tool {name} is not available to call_tool")
             return engine(name, **kw)
         g["call_tool"] = call_tool
     code = compile(open(SCRIPT, encoding="utf-8").read(), SCRIPT, "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
@@ -154,7 +163,8 @@ def main():
     asyncio.run(run_script(w))
     st = check_done(w)
     assert st["calls_used"] == len(w.calls), (st["calls_used"], len(w.calls))
-    print("ok: direct call_tool path,", len(w.calls), "agents,", st["calls_used"], "calls charged")
+    assert set(w.types) == {"cogentic-worker"}, set(w.types)
+    print("ok: direct call_tool path,", len(w.calls), "agents on cogentic-worker,", st["calls_used"], "calls charged")
 
     # 2. no call_tool: clerk agents carry the tool calls, charges are settled through the orchestrator
     w = World(new_run())
@@ -180,6 +190,31 @@ def main():
     lit = [c for c in w.calls if c.startswith("Literature")]
     assert len(lit) == 2, lit
     print("ok: resume after crash; literature not repeated")
+
+    # 4. host without the plugin's custom agent type: falls back to "self" and still finishes
+    w = World(new_run())
+    asyncio.run(run_script(w, known_types=("self",)))
+    check_done(w)
+    assert set(w.types) == {"self"}
+    print("ok: falls back to type self when cogentic-worker is unknown")
+
+    # 5. call_tool exists but cannot reach the plugin's tools: clerk agents take over
+    w = World(new_run())
+    asyncio.run(run_script(w, call_tool_reaches=False))
+    st = check_done(w)
+    assert any(c.startswith("clerk: ") for c in w.calls)
+    real = [c for c in w.calls if not c.startswith("clerk: ")]
+    assert st["calls_used"] == len(real), (st["calls_used"], len(real))
+    print("ok: clerk fallback when call_tool cannot reach the tools")
+
+    # 6. a protocol error from the engine is not mistaken for an unreachable tool
+    run = new_run()
+    try:
+        engine("cogentic_close_round", run_dir=run)
+        raise AssertionError("expected a protocol error")
+    except ToolError as e:
+        assert "[cogentic]" in e.message, e.message
+    print("ok: engine errors carry the [cogentic] marker")
 
 
 if __name__ == "__main__":

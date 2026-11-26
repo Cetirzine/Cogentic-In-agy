@@ -51,12 +51,17 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
 `run_workflow` 只能选择模型档位（tier），所以这个模式下所有 agent 都继承当前会话的模型，
 请用户把会话切到列表里最强的模型之一。脚本每一步都会先检查状态，已完成的就跳过，中断后可以从原处接着跑。
 
+## 桌面版实测结果（2026-11-26，另一台机器）
+
+在只装了 Antigravity 桌面版、没有 `agy` CLI 的机器上测出以下几点，已经据此修复：
+
+- 插件复制到 `~/.gemini/config/plugins/cogentic` 后，桌面版约 15 秒自动热加载。两个技能都被识别；MCP 服务被命名为 `cogentic_cogentic`，23 个工具全部就绪；`cogentic_init` 和 `cogentic_status` 实际调用成功。MCP 启动时的工作目录是插件根目录，所以 `mcp_config.json` 里的相对路径可以正常解析。
+- 原来的 `install.sh` 硬性要求 `agy` CLI。**已修复**：没有 CLI 时改为复制安装（加 `--copy` 参数可以强制走这条路），先在临时目录准备好再整体替换，并且不会覆盖别的插件。
+- 主对话开着 Plan/Execute 模式时，workflow 用 `type_name="self"` 启动的子 agent 继承了计划审批钩子，所有工具调用和 `finish` 都被拦截，导致死锁。**已修复**：子 agent 改为插件自带的 `agents/cogentic-worker.md`（独立的自定义 agent 类型，显式列出所需工具，继承 MCP，命令自动执行，在 agent 列表里隐藏）；如果宿主不认识这个类型，就自动退回 `self`。
+- 引擎返回的错误现在都带 `[cogentic]` 标记。workflow 脚本据此区分两种情况：带标记的是真正的协议错误，照常抛出；其他报错一律当作 `call_tool` 在当前宿主里够不到这些工具（比如工具名被加了命名空间），之后统一改由 clerk agent 代为调用。
+
 ## 已知的不确定性
 
-- 在 `/cogentic` 技能里直接调用 swarm 工具，是否需要先用 `/swarm` 进入 swarm 模式？agy 1.5.13 的更新日志写着
-  "the swarm skill is no longer offered to the agent"，但工具本身是否还暴露给普通会话，没有说明。技能里两种情况都处理了：
-  没有 swarm 工具就改走 workflow 模式，或者提示用户用 `/swarm` 开场。
-- 插件里 MCP 工具的名字在 agy 中是否会被加上命名空间前缀？目前文档没有说清楚。工具名本身都带 `cogentic_` 前缀，
-  模型按描述找工具，所以不受影响。workflow 脚本的 `call_tool` 如果按名字找不到工具，会自动改用 clerk agent 代为调用。
-- 开发机所在地区无法调用 agy（`User location is not supported`），所以只做了静态校验、引擎单元测试和 workflow 模拟，
-  **没有跑过端到端的真实运行**。
+- 在 `/cogentic` 技能里能不能直接调用 swarm 工具，还是必须先用 `/swarm` 进入 swarm 模式？技能里两种情况都处理了：没有 swarm 工具就改走 workflow 模式，或者提示用户用 `/swarm` 开场。
+- `cogentic-worker` 这个自定义 agent 类型在 workflow 里实际能否规避 Plan/Execute 钩子，还要在桌面版上实测确认；如果不行，脚本会退回 `self`，这时请在普通的单模型对话里运行。
+- swarm 模式和 workflow 模式都还没有完整跑完一次端到端的真实运行。
