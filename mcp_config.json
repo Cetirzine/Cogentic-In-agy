@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cogentic": {
+      "command": "agy-node",
+      "args": ["mcp/cogentic.cjs"]
+    }
+  }
+}

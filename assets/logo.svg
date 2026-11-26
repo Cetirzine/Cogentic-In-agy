@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Cogentic</title>
+  <!-- A gear (the harness) around a check mark (a verified proof). -->
+  <g fill="none" stroke="#3B6FE0" stroke-width="9" stroke-linejoin="round">
+    <path d="M64 18 l8 0 l3 11 a37 37 0 0 1 10 6 l11 -4 l6 7 l-6 10 a37 37 0 0 1 3 11 l10 5 l-1 9 l-11 3 a37 37 0 0 1 -5 10 l5 10 l-7 6 l-10 -6 a37 37 0 0 1 -11 4 l-3 11 l-9 0 l-3 -11 a37 37 0 0 1 -11 -4 l-10 6 l-7 -6 l5 -10 a37 37 0 0 1 -5 -10 l-11 -3 l-1 -9 l10 -5 a37 37 0 0 1 3 -11 l-6 -10 l6 -7 l11 4 a37 37 0 0 1 10 -6 l3 -11 z"/>
+  </g>
+  <path d="M46 66 l13 13 l25 -28" fill="none" stroke="#F2A93B" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
