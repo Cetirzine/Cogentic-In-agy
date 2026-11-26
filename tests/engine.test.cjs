@@ -155,10 +155,15 @@ test('concurrent writers do not lose updates', async () => {
   const cli = path.join(__dirname, '..', 'mcp', 'cogentic.cjs');
   const one = () => new Promise((res, rej) => {
     const p = spawn(process.execPath, [cli, 'cli', 'cogentic_charge', JSON.stringify({ run_dir: run, role: 'prover', model: 'gemini-4-carbon-high' })]);
-    p.on('exit', (c) => (c === 0 ? res() : rej(new Error(`exit ${c}`))));
+    let err = '';
+    p.stderr.on('data', (d) => { err += d; });
+    p.on('close', (c) => (c === 0 ? res() : rej(new Error(`exit ${c}: ${err}`))));
   });
   await Promise.all(Array.from({ length: 16 }, one));
   assert.equal(call('cogentic_status', { run_dir: run }).calls_used, 16);
+  // Readers outside the lock while writers rename state.json (Windows: open files block renames).
+  await Promise.all([...Array.from({ length: 8 }, one), ...Array.from({ length: 8 }, async () => call('cogentic_status', { run_dir: run }))]);
+  assert.equal(call('cogentic_status', { run_dir: run }).calls_used, 24);
 });
 
 test('MCP stdio: initialize, tools/list, tools/call, errors', async () => {

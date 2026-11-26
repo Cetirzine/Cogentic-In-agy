@@ -35,14 +35,26 @@ const fail = (msg) => { throw new CogenticError(msg); };
 
 // ---------- files ----------
 
+// Windows reports a file that another process has open, or a directory still being deleted, as
+// EPERM / EACCES / EBUSY where POSIX would succeed or say EEXIST: those are transient, so retry.
+const TRANSIENT = new Set(['EPERM', 'EACCES', 'EBUSY']);
+function retryTransient(fn, tries = 100) {
+  for (let i = 0; ; i++) {
+    try { return fn(); } catch (e) {
+      if (!TRANSIENT.has(e.code) || i >= tries) throw e;
+      sleepMs(10 + Math.floor(Math.random() * 20));
+    }
+  }
+}
+
 function writeAtomic(file, text) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
   fs.writeFileSync(tmp, text);
-  fs.renameSync(tmp, file);
+  retryTransient(() => fs.renameSync(tmp, file));
 }
 const readJSON = (file, dflt) => {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) {
+  try { return JSON.parse(retryTransient(() => fs.readFileSync(file, 'utf8'))); } catch (e) {
     if (dflt !== undefined && e.code === 'ENOENT') return dflt;
     throw e;
   }
@@ -54,7 +66,7 @@ const appendJSONL = (file, obj) => {
 };
 const readJSONL = (file) => {
   let text;
-  try { text = fs.readFileSync(file, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
+  try { text = retryTransient(() => fs.readFileSync(file, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   return text.split('\n').filter(Boolean).map((l) => JSON.parse(l));
 };
 
@@ -66,7 +78,7 @@ function withLock(runDir, fn) {
   const deadline = Date.now() + 20000;
   for (;;) {
     try { fs.mkdirSync(lock); break; } catch (e) {
-      if (e.code !== 'EEXIST') throw e;
+      if (e.code !== 'EEXIST' && !TRANSIENT.has(e.code)) throw e;
       try {
         if (Date.now() - fs.statSync(lock).mtimeMs > 30000) { fs.rmSync(lock, { recursive: true, force: true }); continue; }
       } catch (_) { continue; }
@@ -74,7 +86,7 @@ function withLock(runDir, fn) {
       sleepMs(50);
     }
   }
-  try { return fn(); } finally { fs.rmSync(lock, { recursive: true, force: true }); }
+  try { return fn(); } finally { retryTransient(() => fs.rmSync(lock, { recursive: true, force: true })); }
 }
 
 // ---------- helpers ----------
