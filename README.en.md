@@ -103,6 +103,10 @@ python3 -I tests/workflow_sim.py
 agy plugin validate . --strict
 ```
 
+```bash
+./scripts/check-agent-tools.sh   # check agents/*.md tool names against agy's registry (no quota used)
+```
+
 ## Status
 
 The engine, the MCP protocol and the workflow script are tested: engine unit tests plus a

@@ -101,6 +101,10 @@ python3 -I tests/workflow_sim.py
 agy plugin validate . --strict
 ```
 
+```bash
+./scripts/check-agent-tools.sh   # 用 agy 的工具注册表逐个检查 agents/*.md 里的工具名（不消耗额度）
+```
+
 - `mcp/engine.cjs`：状态机，论文的不变量都由它保证
 - `mcp/cogentic.cjs`：MCP stdio 服务和 CLI，用 `agy-node` 运行，不依赖任何第三方包
 - `skills/cogentic/`：`/cogentic` 入口，即 orchestrator 的规程，另附 workflow 后备脚本

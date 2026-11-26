@@ -37,9 +37,12 @@ const unquote = (s) => s.replace(/^["']|["']$/g, '');
 
 // Documented agent frontmatter fields (/docs/subagents, /docs/build-plugins).
 const AGENT_FIELDS = new Set(['name', 'description', 'tools', 'mainAgent', 'subagent', 'model', 'commandExecutionPolicy', 'mcpServers', 'skills', 'plugins', 'inheritMcp', 'inheritCustomizations']);
-// Tool names documented by Antigravity or used by Google's own shipped agents. An unmapped name
-// "may cause the subagent process to hang" (/docs/subagents, known issues).
-const KNOWN_TOOLS = new Set(['view_file', 'list_dir', 'grep_search', 'find_by_name', 'write_to_file', 'replace_file_content', 'run_command', 'search_web', 'call_mcp_tool', 'finish', 'send_message', 'invoke_subagent', 'define_subagent']);
+// Tool names that agy's component registry resolves, probed one by one with
+// scripts/check-agent-tools.sh (agy 1.5.x, 2026-11-26). A name outside the registry stops the
+// agent at start-up ("tool ... not found in registry"); call_mcp_tool is one such name, even
+// though the docs mention it: MCP tools reach an agent through inheritMcp instead.
+const REGISTRY_TOOLS = new Set(['view_file', 'list_dir', 'grep_search', 'find_by_name', 'write_to_file', 'replace_file_content', 'multi_replace_file_content', 'run_command', 'command_status', 'send_command_input', 'search_web', 'read_url_content', 'read_file', 'edit_file', 'write_file', 'manage_task', 'finish', 'send_message', 'invoke_subagent', 'define_subagent', 'ask_question']);
+const NOT_IN_REGISTRY = new Set(['call_mcp_tool']);
 const PLUGIN_FIELDS = new Set(['name', 'displayName', 'description', 'logo', 'suggestedPrompts', 'version', 'author', 'homepage', 'repository', 'disabled']);
 
 test('plugin.json has only fields the loader reads', () => {
@@ -60,9 +63,12 @@ test('agents: documented fields, subagent-invocable, mapped tools, valid enums',
     assert.equal(fm.name, f.replace(/\.md$/, ''), `${f}: name matches the file name`);
     assert.ok(fm.description && fm.description.length > 20, `${f}: description`);
     assert.ok(Array.isArray(fm.tools) && fm.tools.length, `${f}: explicit tools list`);
-    for (const t of fm.tools) assert.ok(KNOWN_TOOLS.has(t), `${f}: tool ${t} is not a documented/known Antigravity tool name`);
-    assert.ok(fm.tools.includes('finish'), `${f}: workflow agents return through finish`);
-    assert.ok(fm.tools.includes('call_mcp_tool'), `${f}: needs call_mcp_tool for lazily loaded plugin MCP tools`);
+    for (const t of fm.tools) {
+      assert.ok(!NOT_IN_REGISTRY.has(t), `${f}: ${t} is not in agy's tool registry and stops the agent at start-up`);
+      assert.ok(REGISTRY_TOOLS.has(t), `${f}: tool ${t} has not been verified against agy's registry (run scripts/check-agent-tools.sh, then add it here)`);
+    }
+    assert.ok(!fm.tools.includes('finish'), `${f}: run_workflow injects finish itself`);
+    assert.notEqual(fm.inheritMcp, false, `${f}: MCP tools reach the agent only through inheritMcp`);
     if (fm.model !== undefined) assert.ok(['inherit', 'flash_lite', 'flash', 'pro'].includes(fm.model), `${f}: model`);
     if (fm.commandExecutionPolicy !== undefined) assert.ok(['off', 'auto', 'eager', 'sandbox'].includes(fm.commandExecutionPolicy), `${f}: commandExecutionPolicy`);
     assert.notEqual(fm.model, 'inherit', `${f}: must not inherit the conversation's (possibly planner+executor) model`);

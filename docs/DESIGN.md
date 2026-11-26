@@ -64,6 +64,10 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
   - 熔断与超时：agent 报错、超时（默认 90 分钟），或者完成了却没有记录产出，都计为失败；连续 3 次失败就停下并给出诊断，不再空转烧额度。开局时 orchestrator 失败，不会再继续启动文献检索。
   - swarm 模式下的同类问题：官方文档说 worker 不指定模型时会继承对话的模型，所以技能现在要求每个成员（包括 narrator 和 monitor）都写明具体的模型 id，并且永远不选 Orchestrator 这个规划 + 执行条目。
   - 新增 `tests/plugin.test.cjs`：按官方格式静态检查插件清单、agent 的 frontmatter（字段、工具名、枚举值、`subagent`）、技能、链接和 MCP 配置，防止以后再出同类错误。
+- 第三轮实测：worker 已经能被正确解析，快速失败机制也生效了（4 秒内报错并停下），但 `tools` 里的 `call_mcp_tool` 不在 agy 的组件注册表里（`unknown component: tool "call_mcp_tool" not found in registry`）。原因是官方文档虽然提到了这个名字，但它并不能写进 `tools`；插件的 MCP 工具是通过 `inheritMcp` 注入给 agent 的。**已修复**：
+  - 用新写的 `scripts/check-agent-tools.sh` 实测了注册表：agy 在调用模型之前就会先解析 agent 的组件，所以不消耗额度，地区不受支持的机器上也能跑。随便编的名字和 `call_mcp_tool` 都会报 not found；`view_file`、`list_dir`、`grep_search`、`find_by_name`、`write_to_file`、`replace_file_content`、`multi_replace_file_content`、`run_command`、`command_status`、`send_command_input`、`search_web`、`read_url_content`、`read_file`、`edit_file`、`write_file`、`manage_task`、`finish`、`send_message`、`invoke_subagent`、`define_subagent`、`ask_question` 全部能解析。
+  - worker 的 `tools` 改成只用实测能解析的名字，去掉了 `call_mcp_tool`；也去掉了 `finish`，因为 `run_workflow` 会自己注入它。完整的 worker 定义（含 `model: pro`、`commandExecutionPolicy: auto`）整体实测解析通过。
+  - 静态测试的白名单改为这份实测结果，并且明确禁止写 `call_mcp_tool` 和 `finish`。
 - 引擎返回的错误现在都带 `[cogentic]` 标记。workflow 脚本据此区分两种情况：带标记的是真正的协议错误，照常抛出；其他报错一律当作 `call_tool` 在当前宿主里够不到这些工具（比如工具名被加了命名空间），之后统一改由 clerk agent 代为调用。
 
 ## 已知的不确定性
