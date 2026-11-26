@@ -1,0 +1,93 @@
+{
+  "notes": "Advice for the orchestrator, not rules: it chooses freely among the models swarm{action:\"models\", all:true} lists. Cards summarize published evidence (sources and dates in docs/MODELS.md); the run's own outcomes (cogentic_models.outcomes_by_model) outweigh them. Update the cards when Google ships new models; a listed model without a card is simply new.",
+  "as_of": "2026-11-19",
+  "levels": "Each family is served at thinking levels (low, medium, high, sometimes xhigh). Higher levels think longer: better on hard reasoning, slower, more tokens and quota. Pick the lowest level that the role's difficulty needs, and escalate on evidence.",
+  "families": {
+    "carbon": {
+      "positioning": "Google's model for the hardest problems and long-horizon agentic work; uses many thinking tokens to explore hypotheses; listed for formal proofs and extended verification loops.",
+      "strengths": [
+        "deepest single-shot reasoning in the family (AA HLE-Diamond 69.1, CritPt 69.0, RiemannBench 80.0)",
+        "careful verification",
+        "non-hallucination 88.6% (better than Neon)"
+      ],
+      "weaknesses": [
+        "slowest: ~56 tok/s, ~73 s to first answer token, ~37 min per AA index task at high",
+        "32K output per non-streaming call",
+        "occasional timeouts"
+      ],
+      "levels": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "notes": "Medium is close to high on AA (58.3 vs 60.0) at lower cost; Google describes Carbon as based on Argon."
+    },
+    "neon": {
+      "positioning": "Complex coding, analytical reasoning and long-running agent workflows; deeper than Hydrogen and faster than Carbon.",
+      "strengths": [
+        "top AA Intelligence Index (59.6 high, 61.4 xhigh)",
+        "RiemannBench 84.0, HLE-Diamond 71.3 at xhigh",
+        "long context (GraphWalks 256k-1M 95.2%)",
+        "64K synchronous output",
+        "~2.5x Carbon's speed (101 tok/s)"
+      ],
+      "weaknesses": [
+        "lowest non-hallucination of the family (86.1%): check its citations",
+        "verbose, especially xhigh (283M output tokens on the AA suite)"
+      ],
+      "levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "hydrogen": {
+      "positioning": "Fast, cost-efficient execution for everyday and agentic work, on its own or as sub-agents; not Google's pick for the hardest reasoning.",
+      "strengths": [
+        "fastest (~165 tok/s, ~8.6 min per AA task at high, 1.5 min at low)",
+        "cheapest per task",
+        "non-hallucination 91.3% (best of the three)",
+        "64K synchronous output",
+        "HLE-Diamond 54.9-58.8, CritPt 61.5"
+      ],
+      "weaknesses": [
+        "clearly behind Carbon and Neon on the hardest reasoning",
+        "many steps per agentic task",
+        "higher unjustified-refusal rate on multimodal prompts"
+      ],
+      "levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    }
+  },
+  "roles": {
+    "orchestrator": "Long-running, tool-heavy coordination; no mathematics. Needs reliability more than depth. The conversation's own model; suggest a change to the user only if it is clearly unsuited.",
+    "literature": "Web search and reading; exact citations matter most (low hallucination), plus speed for many fetches. Depth only for a targeted mid-run search on a hard technical step.",
+    "summarizer": "Read a long history, select and condense; one per prover slot, so it is called often. Needs long-context reading and economy more than depth.",
+    "prover": "The hardest work: research-level proofs. Needs maximum reasoning depth. Diversify models within a round so provers do not share blind spots; give repair/finalize slots a strong model too.",
+    "solo_verifier": "Adversarial line-by-line check of one draft. Needs depth and strictness and low hallucination; prefer a different model from the draft's prover.",
+    "cross_verifier": "Reads all drafts of a round side by side: long context plus depth; prefer a model different from most of the round's provers.",
+    "auditor": "Faithful restatement of confirmed fragments as self-contained lemmas: precision and low hallucination, moderate depth.",
+    "lemma_verifier": "Adversarial check of one short lemma: depth over speed, but short inputs, so a medium level is usually enough.",
+    "advisor": "Process analysis of logs across the run; no mathematics. Long reading, short output: economy.",
+    "comparator": "Judge which verified proof is strongest: moderate depth.",
+    "writer": "Long, faithful exposition of a verified proof: long output (prefer 64K-output models), clarity, no new mathematics.",
+    "final_auditor": "Last gate against errors introduced in exposition: maximum strictness.",
+    "narrator": "Maintains the swarm Overview: the cheapest, fastest model.",
+    "monitor": "Watches for stalls: the cheapest, fastest model."
+  },
+  "selection_principles": [
+    "Prefer the newest, strongest generation the list offers (today Gemini 4: Carbon, Neon, Hydrogen; later Gemini 5 and beyond). Models older than Gemini 4 are weaker: avoid them. Gemini 4 Argon is being retired: avoid it.",
+    "Spend depth where errors are expensive (provers, verifiers, final audit) and economy where they are cheap (summaries, narration, process advice).",
+    "priority=quality: prefer the deepest suitable model and higher levels; priority=economy: prefer faster, cheaper models and lower levels, escalating only on evidence; balanced: in between.",
+    "Diversify: different provers in a round on different models; a verifier on a different model from the prover it checks.",
+    "Adapt on evidence from cogentic_models: a model whose drafts keep failing on depth gets replaced or escalated a level; a verifier model that missed errors another caught gets replaced for that role; a role that keeps succeeding on a cheaper model stays there.",
+    "Watch the budget and quota: as remaining calls shrink, move low-stakes roles to cheaper levels before cutting prover slots; if a worker pauses on quota, switch it with swarm{action:\"model\"} to another suitable model.",
+    "A listed model without a card is new: read what you can about it (its name, its level, a quick look at Google's model card if you have web access), try it on low-stakes roles first, compare outcomes, then promote it.",
+    "User pins and single_model always win."
+  ]
+}

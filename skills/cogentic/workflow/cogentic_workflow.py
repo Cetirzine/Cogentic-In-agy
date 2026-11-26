@@ -5,7 +5,7 @@
 #   run_workflow(ScriptPath="<this file>", Description="Cogentic: <title>",
 #                Args={"run_dir": "<from cogentic_init>", "roles_dir": "<abs path of cogentic-roles/roles>"})
 # Workflow agents can only pick a model tier, so every agent inherits the conversation's model:
-# start the conversation on a Gemini 4 model (the swarm mode is the one that assigns per-role models).
+# start the conversation on one of the strongest models in /model (per-role model choice needs swarm mode).
 
 import json
 import os

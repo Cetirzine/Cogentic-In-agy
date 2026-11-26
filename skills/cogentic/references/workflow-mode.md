@@ -6,9 +6,10 @@ Antigravity's built-in `run_workflow` engine. Each agent appears as a card in th
 in place of the swarm board.
 
 **Models.** Workflow agents can only choose a model tier, so every agent inherits this
-conversation's model. Before starting, check that the conversation runs on a Gemini 4 model
-(`/model`; the paper's choice is Gemini 4 Argon High). If it does not, ask the user to switch.
-The per-role assignments of the preset apply only in swarm mode. Tell the user this in one line.
+conversation's model, and you cannot choose models per role. Check the conversation's model
+against [model-selection.md](model-selection.md): it should be one of the strongest models in the
+`/model` list. If it is not, suggest a switch to the user. Tell the user in one line that per-role
+model choice is only available in swarm mode.
 
 ## Steps
 

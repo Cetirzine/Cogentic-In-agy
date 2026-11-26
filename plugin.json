@@ -2,13 +2,13 @@
   "name": "cogentic",
   "displayName": "Cogentic",
   "version": "0.1.0",
-  "description": "Cogentic proof discovery (arXiv:2609.40324) as an Antigravity swarm: /cogentic runs rounds of parallel Gemini 4 provers, adversarial solo and cross verifiers, a verified lemma ledger, a process advisor, and a comparator, formal writer and final audit.",
+  "description": "Cogentic proof discovery (arXiv:2609.40324) as an Antigravity swarm: /cogentic runs rounds of parallel provers, adversarial solo and cross verifiers, a verified lemma ledger, a process advisor, and a comparator, formal writer and final audit. The orchestrator picks each agent's model from your Google AI plan.",
   "author": { "name": "Cetirzine", "url": "https://github.com/Cetirzine" },
   "repository": "https://github.com/Cetirzine/Cogentic-In-agy",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "/cogentic Prove or disprove: <your open problem, stated precisely>",
-    "/cogentic --preset faithful <problem>  (every agent on Gemini 4 Argon High, as in the paper)",
+    "/cogentic --priority quality <hard problem>",
     "/cogentic --resume"
   ]
 }

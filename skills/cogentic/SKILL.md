@@ -2,7 +2,7 @@
 name: cogentic
 description: >-
   Cogentic proof-discovery mode (arXiv:2609.40324): turns this conversation into the orchestrator of
-  a swarm of Gemini 4 agents (literature reviewers, summarizers, parallel provers, adversarial
+  a swarm of agents, each on a model it picks from the user's plan (literature reviewers, summarizers, parallel provers, adversarial
   verifiers, auditor, process advisor, comparator, formal writer, final auditor) that work in rounds
   on one open mathematical problem until a proof clears verification and is written up as a
   self-contained manuscript. Use when the user types /cogentic or asks to run Cogentic on a problem.
@@ -26,7 +26,10 @@ language.
 ## 0. Parse the request
 
 `/cogentic <problem>` takes the problem as text or as a path to a file. Optional flags:
-`--preset balanced|faithful|economy|max` (default `balanced`), `--rounds N` (default 8),
+`--priority quality|balanced|economy` (default `balanced`: how you trade accuracy against speed
+and quota when you choose models), `--pin <role>=<model>` (repeatable: a model the user insists
+on for a role), `--single-model <model>` (one model for every agent, as in the paper),
+`--rounds N` (default 8),
 `--provers K` (maximum prover slots per round, default 6), `--budget N` (agent calls, default 400;
 the paper reports O(100) for most problems and O(1000) for the hardest), `--mode swarm|workflow`,
 and `--resume` to continue the newest run in this workspace (`cogentic_list_runs`).
@@ -47,19 +50,18 @@ ask the user before you start. Otherwise do not add hints, techniques or expecte
 
 1. `cogentic_init` with `workspace` set to the absolute path of the primary workspace (or of the
    current directory), `problem`, a short `title`, and the flags. Keep the returned `run_dir`: every
-   brief and every tool call needs it. The returned `models` map assigns a Gemini 4 model to each
-   role. Use **exactly** those ids when you start workers, and never put a model from outside the
-   Gemini 4 family on any member. The user's Google AI plan may not offer every Gemini 4 model.
-   Check `swarm{action:"models"}` once. If a preset model is missing, substitute the nearest
-   offered Gemini 4 model (same family at a lower level first, then another family at a similar
-   level), and tell the user which substitution you made.
-2. `swarm{action:"title", title:"Cogentic: <title>"}`.
-3. Add the narrator and, if the `swarm_monitor` skill is in your skill list, the monitor, exactly as
-   the swarm rules describe. Put both on `models.narrator`. Add one sentence to the narrator's
+   brief and every tool call needs it.
+2. **See which models you can use.** Call `swarm{action:"models", all:true}`, then
+   `cogentic_models{run_dir}`, and read
+   [references/model-selection.md](references/model-selection.md). You choose a model for every
+   agent you start, from that list. Nothing is fixed in advance.
+3. `swarm{action:"title", title:"Cogentic: <title>"}`.
+4. Add the narrator and, if the `swarm_monitor` skill is in your skill list, the monitor, exactly as
+   the swarm rules describe. Put both on the cheapest, fastest model in the list. Add one sentence to the narrator's
    brief: `For the Overview, call cogentic_status on <run_dir> and show the phase, the round with
    each slot's state, accepted drafts, ledger counts (verified / pending / excluded) and calls used
    against the budget.`
-4. End this first turn with the `open_board` line, as the swarm rules require.
+5. End this first turn with the `open_board` line, as the swarm rules require.
 
 ## 3. Starting agents
 
@@ -67,22 +69,26 @@ Every agent is a fresh swarm worker that you add for one job and kill when it po
 (killed names cannot be reused, so names carry the round). Use this brief template every time:
 
 ```
-swarm{action:"add", name:"<name>", model:"<model from the run's models map>",
+swarm{action:"add", name:"<name>", model:"<the model you chose for this agent>",
       brief:"Cogentic <role>. Load the cogentic-roles skill and follow roles/<role-file>.md.
              run_dir: <run_dir>. Assignment: <slot id | lemma id | scope>.
              When finished, post `@coordinator [done] <one line>`; never paste your work into the board."}
 ```
 
-Then call `cogentic_charge{run_dir, role}` once for each agent you start. Briefs are public, so
+Then call `cogentic_charge{run_dir, role, model, assignment, reason}` once for each agent you
+start. `assignment` is the slot id for summarizers, provers and solo verifiers, `r<n>` for the
+cross verifier, and the lemma id for lemma verifiers. `reason` is one line on why you chose that
+model. The engine checks the model against the policy and the user's pins, and uses these records
+to report how each model performs (`cogentic_models`). Briefs are public, so
 put nothing in them except the role, the run_dir and the assignment: all content travels as files
 under `run_dir`. Start independent agents in the same turn. When you need several copies of one
 role, use the swarm's `tasks` option with one assignment per copy (they become `<name>-1`…).
 
-| Step | Name | Role file | Model key | One per |
+| Step | Name | Role file | `role` for charge | One per |
 |---|---|---|---|---|
 | Literature | `lit-<k>` (`lit-r<n>-<k>` mid-run) | `literature-reviewer` | `literature` | topic |
 | Briefing | `sum-r<n>-<k>` | `summarizer` | `summarizer` | prover slot |
-| Proving | `prov-r<n>-<k>` | `prover` | the slot's `prover_model` | prover slot |
+| Proving | `prov-r<n>-<k>` | `prover` | `prover` | prover slot |
 | Solo check | `ver-r<n>-<k>` | `solo-verifier` | `solo_verifier` | draft |
 | Cross check | `xver-r<n>` | `cross-verifier` | `cross_verifier` | round |
 | Audit | `aud-r<n>` | `auditor` | `auditor` | round |
@@ -91,6 +97,7 @@ role, use the swarm's `tasks` option with one assignment per copy (they become `
 | Compare | `cmp` | `comparator` | `comparator` | run |
 | Write-up | `writer-<v>` | `formal-writer` | `writer` | manuscript version |
 | Final audit | `faud-<v>` | `final-auditor` | `final_auditor` | manuscript version |
+| Narrator / monitor | `narrator`, `monitor` | (swarm skills) | `narrator`, `monitor` | run |
 
 To wait, call `swarm_wait`, then `read_board`, then `cogentic_status`. Kill each worker once its
 `[done]` post has arrived **and** `cogentic_status` shows its output recorded. A worker that posts
@@ -117,9 +124,10 @@ per topic. Start round 1 once every one of them is done.
    briefings. Then call `cogentic_open_round`.
 2. **Briefings.** Start one summarizer per slot, all in the same turn. Each one writes its slot's
    briefing independently.
-3. **Proving.** Once a slot's briefing is recorded, start its prover on that slot's
-   `prover_model`. Provers work in parallel and independently.
-4. **Solo verification.** Once a draft is recorded, start its solo verifier right away.
+3. **Proving.** Once a slot's briefing is recorded, start its prover. Choose its model as the model
+   guide says, and diversify across the round. Provers work in parallel and independently.
+4. **Solo verification.** Once a draft is recorded, start its solo verifier right away, preferably
+   on a different model from that draft's prover.
 5. **Cross verification.** Once every slot has a draft or has been abandoned, start one cross
    verifier for the round.
 6. **Close.** `cogentic_close_round`. A draft is accepted only if both verifiers passed it.
@@ -133,7 +141,9 @@ per topic. Start round 1 once every one of them is done.
    (`cogentic_set_instructions`).
 10. **Stalls.** If the record shows attempts failing at the same step in two rounds, start a
     targeted literature reviewer (`lit-r<n>-<k>`) for that step before you plan the next round.
-11. Tell the user in two or three lines what the round produced. Then go to step 1, or to §6.
+11. **Models.** Check `cogentic_models` (outcomes per model) and the swarm's model list. Adjust
+    your model choices for the next round as the model guide says.
+12. Tell the user in two or three lines what the round produced. Then go to step 1, or to §6.
 
 The engine refuses any step taken out of order. If a tool returns an error, fix the order rather
 than working around it.

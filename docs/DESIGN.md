@@ -27,7 +27,7 @@ prompt，下文的所有提示词与实现都是本仓库按论文第 2 节的�
 | 收尾：comparator → formal writer → 最终审计 | `cogentic_select_best` → `cogentic_submit_manuscript` → `cogentic_submit_audit`；审计不通过就退回 writer 重写，最多 3 次 | 引擎 |
 | 产出一份自包含的文稿 | `final/manuscript.md`（每个版本另存为 `manuscript-v*.md`） | 提示词 + 最终审计 |
 | 预算为 O(100)–O(1000) 次模型调用 | 每启动一个 agent 就 `cogentic_charge` 一次；`budget_calls` 默认 400；超出预算不能再开新轮 | 引擎 |
-| 基础模型为 Gemini 3.1 Pro 或早期版 Gemini 4 Argon，整次运行只用一个模型 | `faithful` 预设：所有角色用 Argon High。默认的 `balanced` 预设按角色分配不同的 Gemini 4 型号（见 MODELS.md） | 引擎只放行 Gemini 4 |
+| 基础模型为 Gemini 3.1 Pro 或早期版 Gemini 4 Argon，整次运行只用一个模型 | 默认由 orchestrator 从订阅提供的模型列表里，按角色为每个智能体挑选模型（见 MODELS.md）；`--single-model` 可以复现"整次运行只用一个模型"的设定 | 不限制模型；引擎记录每个智能体用的模型，统计各模型的表现，并保证用户用 `--pin` 指定的模型生效 |
 
 ## 为什么用 swarm
 
@@ -49,7 +49,7 @@ MCP 服务不依赖任何第三方包，用 Antigravity 自带的 `agy-node` 运
 
 如果当前环境没有 swarm 工具，就退回到 `run_workflow`：由脚本写定步骤顺序，智能体负责所有判断。
 `run_workflow` 只能选择模型档位（tier），所以这个模式下所有 agent 都继承当前会话的模型，
-要求用户把会话切到 Gemini 4。脚本每一步都会先检查状态，已完成的就跳过，中断后可以从原处接着跑。
+请用户把会话切到列表里最强的模型之一。脚本每一步都会先检查状态，已完成的就跳过，中断后可以从原处接着跑。
 
 ## 已知的不确定性
 

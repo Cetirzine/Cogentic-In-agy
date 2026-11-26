@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://arxiv.org/abs/2609.40324"><img src="https://img.shields.io/badge/arXiv-2609.40324-B31B1B?logo=arxiv&logoColor=white" alt="arXiv"></a>
   <img src="https://img.shields.io/badge/Antigravity_CLI-1.5.9+-4285F4?logo=google&logoColor=white" alt="Antigravity CLI 1.5.9+">
-  <img src="https://img.shields.io/badge/models-Gemini_4_only-8E75B2?logo=googlegemini&logoColor=white" alt="Gemini 4 only">
+  <img src="https://img.shields.io/badge/models-chosen_by_the_orchestrator-8E75B2?logo=googlegemini&logoColor=white" alt="Models chosen by the orchestrator">
   <img src="https://img.shields.io/badge/runtime-agy--node,_zero_deps-339933?logo=nodedotjs&logoColor=white" alt="agy-node, zero dependencies">
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cetirzine/Cogentic-In-agy/ci.yml?logo=github&label=tests" alt="Tests"></a>
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/stargazers"><img src="https://img.shields.io/github/stars/Cetirzine/Cogentic-In-agy?logo=github" alt="Stars"></a>
@@ -12,11 +12,11 @@
 [English](README.en.md) · 论文：[arXiv:2609.40324](https://arxiv.org/abs/2609.40324)
 
 这是论文 [Cogentic: Multi-Agent Orchestration for Automated Proof Discovery](https://arxiv.org/abs/2609.40324)（arXiv:2609.40324）的 **Antigravity CLI（`agy`）插件版复现**。
-在 agy 里输入 `/cogentic <问题>`，当前会话就会成为一个证明发现小组的 orchestrator。它带着一群 Gemini 4 智能体，按论文第 2 节的流程一轮一轮地推进：
+在 agy 里输入 `/cogentic <问题>`，当前会话就会成为一个证明发现小组的 orchestrator。它带着一群智能体，按论文第 2 节的流程一轮一轮地推进：
 文献检索 → 每个 prover 一份独立简报 → 多个 prover 并行写证明 → 单份审查和整轮交叉审查（两边都通过才算接受）→ auditor 把已确认的片段整理成引理，单独复核后写进 ledger → process advisor 调整下一轮的指令。
 有证明通过验证后，依次经过 comparator、formal writer 和最终审计，最后产出一份可以交给领域专家阅读的自包含文稿。
 
-界面直接复用 agy 原生 **swarm** 的看板（Board / Members / Graph / Overview）。用的是你 Google AI 订阅（任意档位）里的 Antigravity 额度，不需要 API key，**只使用 Gemini 4 系列模型**。各档位能用哪些 Gemini 4 型号以 `agy models` 的输出为准；某个预设模型在你的档位上不可用时，orchestrator 会换成同系列最接近的可用档位，并告诉你。
+界面直接复用 agy 原生 **swarm** 的看板（Board / Members / Graph / Overview）。用的是你 Google AI 订阅（任意档位）里的 Antigravity 额度，不需要 API key。每个智能体用哪个模型，由 orchestrator 根据你的订阅当前提供的模型列表自行判断，见下文"模型怎么选"。
 
 > 论文作者没有公开代码和提示词。本仓库的提示词和状态机都是按论文描述独立实现的，逐项对照见 [docs/DESIGN.md](docs/DESIGN.md)。
 
@@ -38,14 +38,17 @@ Windows 上用 PowerShell 运行 `scripts\install.ps1`。安装脚本会先执�
 
 ```text
 /cogentic 证明或否定：……（把问题完整写清楚，不要加提示）
-/cogentic --preset faithful <问题>     # 所有角色都用 Gemini 4 Argon High，和论文设定一致
-/cogentic --preset economy --rounds 3 <问题>
+/cogentic --priority economy --rounds 3 <问题>       # 偏省额度
+/cogentic --single-model gemini-4-carbon-high <问题>  # 所有智能体用同一个模型，和论文设定一致
+/cogentic --pin final_auditor=gemini-4-carbon-high <问题>  # 指定某个角色用某个模型
 /cogentic --resume                     # 接着跑这个工作区里最近一次运行
 ```
 
 | 参数 | 默认值 | 说明 |
 |---|---|---|
-| `--preset` | `balanced` | 角色到模型的映射，可选 `balanced` / `faithful` / `economy` / `max`，见 [docs/MODELS.md](docs/MODELS.md) |
+| `--priority` | `balanced` | orchestrator 选模型时偏向哪一边：`quality` 精度优先，`economy` 额度优先 |
+| `--pin` | 无 | `<角色>=<模型>`，强制某个角色用指定模型，可以写多次 |
+| `--single-model` | 无 | 所有智能体用同一个模型 |
 | `--rounds` | 8 | 最多跑几轮 |
 | `--provers` | 6 | 每轮最多几个 prover |
 | `--budget` | 400 | 一次运行最多启动多少个智能体（论文的规模是 O(100)–O(1000)） |
@@ -68,20 +71,11 @@ final/manuscript.md   最终文稿（每版另存为 manuscript-v*.md，审计�
 log.jsonl             事件日志
 ```
 
-## 角色与模型（默认 `balanced` 预设）
+## 模型怎么选
 
-| 角色 | 模型 |
-|---|---|
-| orchestrator | Gemini 4 Neon (Medium) |
-| 文献检索 / summarizer / advisor | Gemini 4 Argon (Medium) |
-| prover | Gemini 4 Carbon (High) 和 Neon (High) 交替 |
-| solo verifier / 最终审计 | Gemini 4 Carbon (High) |
-| cross verifier / comparator | Gemini 4 Neon (High) |
-| auditor / formal writer | Gemini 4 Argon (High) |
-| 引理复核 | Gemini 4 Carbon (Medium) |
-| narrator / monitor | Gemini 4 Hydrogen (Low) |
+代码里不写死任何模型。swarm 启动时，orchestrator 先查看你的订阅提供哪些模型，之后每启动一个智能体，都自己判断该用哪个模型，综合考虑精度、效率和额度：prover、verifier、最终审计这些容易出大错的角色用推理更深的模型；summarizer、narrator 这类低风险的角色用更快更省的模型。同一轮的 prover 分到不同模型上，verifier 尽量不和它审查的 prover 用同一个模型。从第二轮起，还会参考各模型在本次运行里的实际表现来调整。
 
-每个角色为什么这样选、依据哪些评测，见 [docs/MODELS.md](docs/MODELS.md)。
+Google 发布新模型（包括以后的 Gemini 5）时，只要它出现在模型列表里，orchestrator 就能直接选用。需要的话可以更新 [models/catalog.json](models/catalog.json) 里的知识卡片，但这不是必须的。详见 [docs/MODELS.md](docs/MODELS.md)。
 
 ## 开发
 

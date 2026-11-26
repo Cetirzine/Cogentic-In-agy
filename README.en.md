@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://arxiv.org/abs/2609.40324"><img src="https://img.shields.io/badge/arXiv-2609.40324-B31B1B?logo=arxiv&logoColor=white" alt="arXiv"></a>
   <img src="https://img.shields.io/badge/Antigravity_CLI-1.5.9+-4285F4?logo=google&logoColor=white" alt="Antigravity CLI 1.5.9+">
-  <img src="https://img.shields.io/badge/models-Gemini_4_only-8E75B2?logo=googlegemini&logoColor=white" alt="Gemini 4 only">
+  <img src="https://img.shields.io/badge/models-chosen_by_the_orchestrator-8E75B2?logo=googlegemini&logoColor=white" alt="Models chosen by the orchestrator">
   <img src="https://img.shields.io/badge/runtime-agy--node,_zero_deps-339933?logo=nodedotjs&logoColor=white" alt="agy-node, zero dependencies">
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Cetirzine/Cogentic-In-agy/ci.yml?logo=github&label=tests" alt="Tests"></a>
   <a href="https://github.com/Cetirzine/Cogentic-In-agy/stargazers"><img src="https://img.shields.io/github/stars/Cetirzine/Cogentic-In-agy?logo=github" alt="Stars"></a>
@@ -13,7 +13,7 @@
 
 An Antigravity CLI (`agy`) plugin that reproduces [Cogentic: Multi-Agent Orchestration for
 Automated Proof Discovery](https://arxiv.org/abs/2609.40324) (arXiv:2609.40324). Type
-`/cogentic <problem>` and the conversation becomes the orchestrator of a group of Gemini 4 agents
+`/cogentic <problem>` and the conversation becomes the orchestrator of a group of agents
 that follows Section 2 of the paper round by round:
 
 1. literature review;
@@ -29,9 +29,13 @@ Once a proof clears verification, a comparator, a formal writer and a final audi
 self-contained manuscript.
 
 The UI is agy's native **swarm** (Board, Members, Graph, Overview). Runs spend the Antigravity
-quota of your Google AI plan (any tier, no API key needed) and use **only the Gemini 4 family**.
-`agy models` shows which Gemini 4 models your plan offers. If a preset model is not on your plan,
-the orchestrator substitutes the nearest available model of the same family and tells you.
+quota of your Google AI plan (any tier, no API key needed). Nothing about models is hard-coded.
+When the swarm starts, the orchestrator looks at the models your plan offers. For every agent it
+starts, it then picks a model, balancing accuracy, speed and quota: deeper models for provers,
+verifiers and the final audit, faster ones for summaries and narration. It diversifies the provers
+of a round, puts verifiers on a model different from the prover they check, and adapts from round
+2 on to each model's results in the run. New Google models (Gemini 5 and later included) are usable
+as soon as they appear in the list. See [docs/MODELS.md](docs/MODELS.md).
 
 > The paper's code and prompts are not public. All prompts and the state machine here are an
 > independent implementation of the paper's description. [docs/DESIGN.md](docs/DESIGN.md) maps
@@ -56,11 +60,12 @@ On Windows, run `scripts\install.ps1`. Restart agy afterwards.
 
 ```text
 /cogentic Prove or disprove: <the full problem statement, without hints>
-/cogentic --preset faithful <problem>      # every agent on Gemini 4 Argon High, as in the paper
+/cogentic --priority economy <problem>                  # spare the quota
+/cogentic --single-model gemini-4-carbon-high <problem>  # one model for every agent, as in the paper
 /cogentic --resume
 ```
 
-Flags: `--preset balanced|faithful|economy|max` (see [docs/MODELS.md](docs/MODELS.md)),
+Flags: `--priority quality|balanced|economy`, `--pin <role>=<model>`, `--single-model <model>`,
 `--rounds` (default 8), `--provers` (maximum prover slots per round, default 6), `--budget`
 (maximum number of agents per run, default 400), and `--mode swarm|workflow`.
 

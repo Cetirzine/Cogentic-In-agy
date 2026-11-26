@@ -5,7 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
-const { call, PRESETS } = require('../mcp/engine.cjs');
+const { call } = require('../mcp/engine.cjs');
 
 const ws = () => fs.mkdtempSync(path.join(os.tmpdir(), 'cogentic-'));
 const rejects = (fn, re) => assert.throws(fn, (e) => re.test(e.message));
@@ -21,7 +21,6 @@ test('a full run: round, verification, ledger, advisor, consolidation', () => {
   call('cogentic_add_literature', { run_dir: run, title: 'Lagrange', content: 'Order of a subgroup divides the group order.', sources: ['Herstein, Topics in Algebra'] });
   const r1 = call('cogentic_open_round', { run_dir: run, directions: [{ claim: 'G is cyclic', provers: 2 }] });
   assert.equal(r1.slots.length, 2);
-  assert.deepEqual(r1.slots.map((s) => s.prover_model), PRESETS.balanced.prover);
   const [a, b] = r1.slots.map((s) => s.slot_id);
   draft(run, a);
   draft(run, b);
@@ -105,33 +104,57 @@ test('dead ends need verified evidence; excluded directions cannot be reopened',
 test('limits: max provers, max rounds, budget', () => {
   const { run_dir: run } = init({ max_rounds: 1, budget_calls: 10 });
   rejects(() => call('cogentic_open_round', { run_dir: run, directions: [{ claim: 'c', provers: 5 }] }), /max_provers/);
-  call('cogentic_charge', { run_dir: run, role: 'prover', calls: 10 });
+  call('cogentic_charge', { run_dir: run, role: 'prover', model: 'gemini-4-neon-high', calls: 10 });
   rejects(() => call('cogentic_open_round', { run_dir: run, directions: [{ claim: 'c' }] }), /budget/);
   const st = call('cogentic_status', { run_dir: run });
   assert.equal(st.calls_by_role.prover, 10);
 });
 
-test('models: Gemini 4 only, presets and overrides', () => {
-  for (const [name, preset] of Object.entries(PRESETS)) {
-    const all = Object.values(preset).flat();
-    assert.ok(all.every((m) => /^gemini-4-/.test(m)), `${name} uses only Gemini 4`);
-    init({ preset: name });
-  }
-  rejects(() => init({ models: { prover: 'gemini-3.8-flash-high' } }), /Gemini 4/);
-  rejects(() => init({ models: { solo_verifier: 'claude-opus-5-5-high' } }), /Gemini 4/);
-  rejects(() => init({ models: { prover: 'gemini-4-carbon-xhigh' } }), /does not exist/);
-  rejects(() => init({ models: { painter: 'gemini-4-neon-low' } }), /unknown role/);
-  const { run_dir: run } = init({ preset: 'faithful', models: { prover: ['gemini-4-neon-high', 'gemini-4-carbon-high', 'gemini-4-argon-high'] } });
-  const r = call('cogentic_open_round', { run_dir: run, directions: [{ claim: 'c', provers: 4 }] });
-  assert.deepEqual(r.slots.map((s) => s.prover_model), ['gemini-4-neon-high', 'gemini-4-carbon-high', 'gemini-4-argon-high', 'gemini-4-neon-high']);
-  assert.equal(r.models.solo_verifier, 'gemini-4-argon-high');
+test('models: free choice, recorded per agent, pins win, outcomes per model', () => {
+  const { run_dir: run } = init();
+  rejects(() => call('cogentic_charge', { run_dir: run, role: 'prover' }), /which model/);
+  // Any model id is accepted: the orchestrator chooses from what the swarm lists, including new ones.
+  for (const m of ['gemini-4-hydrogen-low', 'gemini-5-pro-high', 'some-future-model']) call('cogentic_charge', { run_dir: run, role: 'narrator', model: m });
+  const r = call('cogentic_open_round', { run_dir: run, directions: [{ claim: 'c', provers: 2 }] });
+  const [a, b] = r.slots.map((s) => s.slot_id);
+  call('cogentic_charge', { run_dir: run, role: 'prover', model: 'gemini-4-carbon-high', assignment: a, reason: 'deepest' });
+  call('cogentic_charge', { run_dir: run, role: 'prover', model: 'gemini-4-neon-high', assignment: b, reason: 'diversity' });
+  call('cogentic_charge', { run_dir: run, role: 'solo_verifier', model: 'gemini-4-neon-high', assignment: a });
+  call('cogentic_charge', { run_dir: run, role: 'solo_verifier', model: 'gemini-4-carbon-high', assignment: b });
+  call('cogentic_charge', { run_dir: run, role: 'cross_verifier', model: 'gemini-4-neon-xhigh', assignment: 'r1' });
+  draft(run, a); draft(run, b);
+  call('cogentic_submit_solo_verdict', { run_dir: run, slot_id: a, verdict: 'pass' });
+  call('cogentic_submit_solo_verdict', { run_dir: run, slot_id: b, verdict: 'fail', objections: ['gap'] });
+  call('cogentic_submit_cross_verdict', { run_dir: run, verdicts: [{ slot_id: a, verdict: 'fail', objections: [{ issue: 'wrong lemma', severity: 'fatal' }] }, { slot_id: b, verdict: 'fail', objections: ['gap'] }] });
+  call('cogentic_close_round', { run_dir: run });
+  const rec = fs.readFileSync(path.join(run, 'record.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(rec.find((e) => e.slot === a).prover_model, 'gemini-4-carbon-high');
+  assert.equal(rec.find((e) => e.slot === a).solo_model, 'gemini-4-neon-high');
+  assert.equal(rec.find((e) => e.slot === a).cross_model, 'gemini-4-neon-xhigh');
+  const m = call('cogentic_models', { run_dir: run });
+  assert.equal(m.outcomes_by_model['gemini-4-carbon-high'].prover.rejected, 1);
+  assert.equal(m.outcomes_by_model['gemini-4-neon-high'].solo_verifier.missed, 1, 'solo passed what cross failed fatally');
+  assert.ok(m.catalog.families.carbon && m.catalog.roles.prover, 'catalog is advice served to the orchestrator');
+  assert.equal(m.calls_by_model['gemini-4-neon-high'], 2);
+
+  const pinned = init({ pins: { final_auditor: 'gemini-4-carbon-high' } }).run_dir;
+  rejects(() => call('cogentic_charge', { run_dir: pinned, role: 'final_auditor', model: 'gemini-4-neon-high' }), /pinned/);
+  call('cogentic_charge', { run_dir: pinned, role: 'final_auditor', model: 'gemini-4-carbon-high' });
+  call('cogentic_charge', { run_dir: pinned, role: 'prover', model: 'gemini-4-neon-high' });
+  const single = init({ single_model: 'gemini-4-carbon-high' }).run_dir;
+  rejects(() => call('cogentic_charge', { run_dir: single, role: 'summarizer', model: 'gemini-4-hydrogen-low' }), /pinned/);
+  rejects(() => init({ pins: { painter: 'x' } }), /unknown role/);
+  rejects(() => init({ priority: 'cheap' }), /priority/);
+  // Workflow mode cannot pick models: agents inherit, so no model is required.
+  const wf = init({ mode: 'workflow' }).run_dir;
+  call('cogentic_charge', { run_dir: wf, role: 'prover' });
 });
 
 test('concurrent writers do not lose updates', async () => {
   const { run_dir: run } = init({ budget_calls: 100000 });
   const cli = path.join(__dirname, '..', 'mcp', 'cogentic.cjs');
   const one = () => new Promise((res, rej) => {
-    const p = spawn(process.execPath, [cli, 'cli', 'cogentic_charge', JSON.stringify({ run_dir: run, role: 'prover' })]);
+    const p = spawn(process.execPath, [cli, 'cli', 'cogentic_charge', JSON.stringify({ run_dir: run, role: 'prover', model: 'gemini-4-carbon-high' })]);
     p.on('exit', (c) => (c === 0 ? res() : rej(new Error(`exit ${c}`))));
   });
   await Promise.all(Array.from({ length: 16 }, one));

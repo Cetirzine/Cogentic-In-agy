@@ -21,60 +21,14 @@ const VERSION = 1;
 const DIRECTION_KINDS = ['claim', 'counterexample', 'repair', 'finalize'];
 const VERDICTS = ['pass', 'fail'];
 
-// Role -> model presets, Gemini 4 family only (see docs/MODELS.md for the evidence behind each pick).
-// `prover` is a list: slots take its models in turn, so a round's provers do not share one model's
-// blind spots. Verifiers run on a different model from the provers they check where possible.
-const ROLES = ['orchestrator', 'literature', 'summarizer', 'prover', 'solo_verifier', 'cross_verifier', 'auditor', 'lemma_verifier', 'advisor', 'comparator', 'writer', 'final_auditor', 'narrator'];
-const PRESETS = {
-  balanced: {
-    orchestrator: 'gemini-4-neon-medium',
-    literature: 'gemini-4-argon-medium',
-    summarizer: 'gemini-4-argon-medium',
-    prover: ['gemini-4-carbon-high', 'gemini-4-neon-high'],
-    solo_verifier: 'gemini-4-carbon-high',
-    cross_verifier: 'gemini-4-neon-high',
-    auditor: 'gemini-4-argon-high',
-    lemma_verifier: 'gemini-4-carbon-medium',
-    advisor: 'gemini-4-argon-medium',
-    comparator: 'gemini-4-neon-high',
-    writer: 'gemini-4-argon-high',
-    final_auditor: 'gemini-4-carbon-high',
-    narrator: 'gemini-4-hydrogen-low',
-  },
-  // The paper: every agent of a run on one base model (Gemini 4 Argon for two of its five problems).
-  faithful: Object.fromEntries(ROLES.map((r) => [r, r === 'prover' ? ['gemini-4-argon-high'] : 'gemini-4-argon-high'])),
-  economy: {
-    orchestrator: 'gemini-4-hydrogen-medium',
-    literature: 'gemini-4-argon-low',
-    summarizer: 'gemini-4-hydrogen-medium',
-    prover: ['gemini-4-neon-medium', 'gemini-4-carbon-medium'],
-    solo_verifier: 'gemini-4-carbon-medium',
-    cross_verifier: 'gemini-4-neon-medium',
-    auditor: 'gemini-4-argon-medium',
-    lemma_verifier: 'gemini-4-carbon-low',
-    advisor: 'gemini-4-hydrogen-medium',
-    comparator: 'gemini-4-neon-medium',
-    writer: 'gemini-4-argon-medium',
-    final_auditor: 'gemini-4-carbon-medium',
-    narrator: 'gemini-4-hydrogen-low',
-  },
-  max: {
-    orchestrator: 'gemini-4-neon-high',
-    literature: 'gemini-4-argon-high',
-    summarizer: 'gemini-4-argon-high',
-    prover: ['gemini-4-carbon-high', 'gemini-4-neon-xhigh'],
-    solo_verifier: 'gemini-4-carbon-high',
-    cross_verifier: 'gemini-4-neon-xhigh',
-    auditor: 'gemini-4-argon-high',
-    lemma_verifier: 'gemini-4-carbon-high',
-    advisor: 'gemini-4-argon-high',
-    comparator: 'gemini-4-neon-xhigh',
-    writer: 'gemini-4-argon-high',
-    final_auditor: 'gemini-4-carbon-high',
-    narrator: 'gemini-4-hydrogen-low',
-  },
-};
-const MODEL_RE = /^gemini-4-(neon|carbon|argon|hydrogen)-(low|medium|high|xhigh)$/;
+// Models are not hard-coded and not restricted. The orchestrator picks a model for every agent it
+// starts from the list the swarm shows it, guided by models/catalog.json (advice, not rules) and by
+// the run's own per-model outcomes. The engine only records the choices and honours user pins.
+const ROLES = ['orchestrator', 'literature', 'summarizer', 'prover', 'solo_verifier', 'cross_verifier', 'auditor', 'lemma_verifier', 'advisor', 'comparator', 'writer', 'final_auditor', 'narrator', 'monitor'];
+const MODELS_DIR = path.join(__dirname, '..', 'models');
+const PRIORITIES = ['quality', 'balanced', 'economy'];
+const loadCatalog = () => readJSON(path.join(MODELS_DIR, 'catalog.json'), { families: {} });
+const modelId = (id, what) => str(id, what, { max: 120 });
 
 class CogenticError extends Error {}
 const fail = (msg) => { throw new CogenticError(msg); };
@@ -196,7 +150,15 @@ function init(a) {
   const runDir = path.join(workspace, '.cogentic', runId);
   fs.mkdirSync(path.join(runDir, 'literature'), { recursive: true });
   fs.mkdirSync(path.join(runDir, 'ledger'), { recursive: true });
-  const models = resolveModels(a.preset, a.models);
+  const pins = {};
+  if (a.pins !== undefined && a.pins !== null) {
+    if (typeof a.pins !== 'object' || Array.isArray(a.pins)) fail('pins must be an object of role -> model id');
+    for (const [role, id] of Object.entries(a.pins)) {
+      if (!ROLES.includes(role)) fail(`unknown role ${role}; roles are ${ROLES.join(', ')}`);
+      pins[role] = modelId(id, `pin for ${role}`);
+    }
+  }
+  const single = a.single_model ? modelId(a.single_model, 'single_model') : '';
   const st = {
     version: VERSION,
     run_id: runId,
@@ -208,9 +170,12 @@ function init(a) {
       max_provers: int(a.max_provers, 'max_provers', 6, 1, 64),
       budget_calls: int(a.budget_calls, 'budget_calls', 400, 10, 100000),
       mode: oneOf(a.mode || 'swarm', 'mode', ['swarm', 'workflow']),
-      preset: a.preset || 'balanced',
-      models,
+      priority: oneOf(a.priority || 'balanced', 'priority', PRIORITIES),
+      pins,
+      single_model: single,
     },
+    assignments: [],
+    calls_by_model: {},
     phase: 'literature', // literature -> rounds -> consolidation -> done | stopped
     calls_used: 0,
     calls_by_role: {},
@@ -227,34 +192,13 @@ function init(a) {
   return { run_dir: runDir, run_id: runId, ...paths(runDir), next: nextStep(runDir, st) };
 }
 
-function resolveModels(preset, overrides) {
-  const name = preset || 'balanced';
-  if (!PRESETS[name]) fail(`preset must be one of ${Object.keys(PRESETS).join(', ')}`);
-  const m = JSON.parse(JSON.stringify(PRESETS[name]));
-  if (overrides !== undefined && overrides !== null) {
-    if (typeof overrides !== 'object' || Array.isArray(overrides)) fail('models must be an object of role -> model id');
-    for (const [role, v] of Object.entries(overrides)) {
-      if (!ROLES.includes(role)) fail(`unknown role ${role}; roles are ${ROLES.join(', ')}`);
-      m[role] = role === 'prover' ? (Array.isArray(v) ? v : [v]) : v;
-    }
-  }
-  for (const [role, v] of Object.entries(m)) {
-    for (const id of Array.isArray(v) ? v : [v]) {
-      if (typeof id !== 'string' || !MODEL_RE.test(id)) fail(`${role}: ${JSON.stringify(id)} is not a Gemini 4 model id (gemini-4-{neon|carbon|argon|hydrogen}-{low|medium|high|xhigh}); this plugin runs on the Gemini 4 family only`);
-      if (/^gemini-4-(carbon|argon)-xhigh$/.test(id)) fail(`${role}: ${id} does not exist (Carbon and Argon go up to high)`);
-    }
-    if (role === 'prover' && !v.length) fail('prover needs at least one model');
-  }
-  return m;
-}
-
-// Model for a prover slot: the run's prover models in turn across the round's slots.
-const proverModel = (st, index) => { const list = st.config.models.prover; return list[index % list.length]; };
-
 function paths(runDir) {
   const p = P(runDir);
   return { problem_path: p.problem, record_path: p.record, ledger_path: p.ledger, instructions_path: p.instructions, literature_dir: p.litDir, log_path: p.log };
 }
+
+// The model the run requires for a role, if the user pinned one ('' if the orchestrator chooses).
+const requiredModel = (st, role) => st.config.single_model || st.config.pins[role] || '';
 
 function charge(a) {
   const runDir = resolveRun(a.run_dir);
@@ -262,11 +206,65 @@ function charge(a) {
     const st = load(runDir);
     const role = str(a.role, 'role', { max: 60 });
     const calls = int(a.calls, 'calls', 1, 1, 10000);
+    let model = str(a.model, 'model', { optional: true, max: 120 });
+    if (model && model !== 'inherit') {
+      const req = ROLES.includes(role) ? requiredModel(st, role) : '';
+      if (req && model !== req) fail(`the user pinned ${role} to ${req}`);
+    } else if (st.config.mode === 'swarm' && ROLES.includes(role) && !model) {
+      fail('in swarm mode, say which model this agent runs on (model)');
+    }
     st.calls_used += calls;
     st.calls_by_role[role] = (st.calls_by_role[role] || 0) + calls;
+    if (model) st.calls_by_model[model] = (st.calls_by_model[model] || 0) + calls;
+    if (model) st.assignments.push({ role, model, assignment: str(a.assignment, 'assignment', { optional: true, max: 200 }), reason: str(a.reason, 'reason', { optional: true, max: 1000 }), round: st.rounds.length, at: now() });
     save(runDir, st);
     return { calls_used: st.calls_used, budget_calls: st.config.budget_calls, remaining: Math.max(0, st.config.budget_calls - st.calls_used) };
   });
+}
+
+// The model last recorded (cogentic_charge) for a role on an assignment ('' if unknown).
+function assignedModel(st, role, assignment, round) {
+  const list = (st.assignments || []).filter((x) => x.role === role);
+  const hit = [...list].reverse().find((x) => x.assignment === assignment)
+    || (round !== undefined ? [...list].reverse().find((x) => x.round === round) : undefined);
+  return hit ? hit.model : '';
+}
+
+// Per-model outcomes so far, for the orchestrator's model choices.
+function modelStats(st, record) {
+  const by = {};
+  const bump = (model, role, key) => {
+    if (!model) return;
+    const m = (by[model] = by[model] || {});
+    const r = (m[role] = m[role] || {});
+    r[key] = (r[key] || 0) + 1;
+  };
+  for (const a of st.assignments) bump(a.model, a.role, 'started');
+  for (const e of record) {
+    if (e.outcome === 'no_draft') { bump(e.prover_model, 'prover', 'no_draft'); continue; }
+    bump(e.prover_model, 'prover', e.outcome === 'accepted' ? 'accepted' : 'rejected');
+    // A verifier "missed" when it passed a draft the other verifier failed with a fatal/major objection.
+    const hard = (by_) => (e.objections || []).some((o) => o.by === by_ && o.severity !== 'minor');
+    if (e.solo === 'pass' && e.cross === 'fail' && hard('cross')) bump(e.solo_model, 'solo_verifier', 'missed');
+    if (e.cross === 'pass' && e.solo === 'fail' && hard('solo')) bump(e.cross_model, 'cross_verifier', 'missed');
+    if (e.solo === 'fail') bump(e.solo_model, 'solo_verifier', 'failed_draft');
+    if (e.cross === 'fail') bump(e.cross_model, 'cross_verifier', 'failed_draft');
+  }
+  return by;
+}
+
+function models(a) {
+  const runDir = resolveRun(a.run_dir);
+  const st = load(runDir);
+  return {
+    priority: st.config.priority,
+    pins: st.config.pins,
+    single_model: st.config.single_model,
+    catalog: loadCatalog(),
+    calls_by_model: st.calls_by_model,
+    outcomes_by_model: modelStats(st, readJSONL(P(runDir).record)),
+    budget: { used: st.calls_used, total: st.config.budget_calls },
+  };
 }
 
 function addLiterature(a) {
@@ -328,7 +326,7 @@ function openRound(a) {
       const k = int(d.provers, 'provers', 1, 1, 64);
       for (let i = 0; i < k; i++) {
         const id = `r${n}-${dir.id}-p${i + 1}`;
-        slots.push({ id, direction_id: dir.id, model: proverModel(st, slots.length), briefing: false, draft: false, solo: null });
+        slots.push({ id, direction_id: dir.id, briefing: false, draft: false, solo: null });
       }
       used.push({ id: dir.id, claim: dir.claim, kind: dir.kind, provers: k });
     }
@@ -344,8 +342,8 @@ function openRound(a) {
     return {
       round: n,
       directions: used,
-      slots: slots.map((s) => ({ slot_id: s.id, direction_id: s.direction_id, prover_model: s.model, briefing_path: P(runDir).briefing(n, s.id), draft_path: P(runDir).draft(n, s.id) })),
-      models: st.config.models,
+      slots: slots.map((s) => ({ slot_id: s.id, direction_id: s.direction_id, briefing_path: P(runDir).briefing(n, s.id), draft_path: P(runDir).draft(n, s.id) })),
+      model_hint: 'Choose each agent\'s model yourself (cogentic_models); diversify the provers of a round and put verifiers on a different model from the prover they check where you can.',
       next: 'Spawn one summarizer per slot (each independently writes that slot\'s briefing), then one prover per slot.',
     };
   });
@@ -489,7 +487,7 @@ function closeRound(a) {
     const accepted = [];
     for (const s of r.slots) {
       if (!s.draft) {
-        appendJSONL(P(runDir).record, { round: r.n, slot: s.id, direction_id: s.direction_id, outcome: 'no_draft', reason: s.abandoned });
+        appendJSONL(P(runDir).record, { round: r.n, slot: s.id, direction_id: s.direction_id, prover_model: assignedModel(st, 'prover', s.id), outcome: 'no_draft', reason: s.abandoned });
         continue;
       }
       const solo = readJSON(P(runDir).solo(r.n, s.id));
@@ -504,6 +502,9 @@ function closeRound(a) {
         target_claim: s.target_claim,
         method: s.method,
         claimed_status: s.claimed_status,
+        prover_model: assignedModel(st, 'prover', s.id),
+        solo_model: assignedModel(st, 'solo_verifier', s.id),
+        cross_model: assignedModel(st, 'cross_verifier', `r${r.n}`, r.n),
         solo: solo.verdict,
         cross: cv.verdict,
         outcome: ok ? 'accepted' : 'rejected',
@@ -771,13 +772,16 @@ function status(a) {
     run_id: st.run_id,
     title: st.title,
     phase: st.phase,
-    round: r ? { n: r.n, status: r.status, slots: r.slots.map((s) => ({ id: s.id, direction: s.direction_id, prover_model: s.model, briefing: s.briefing, draft: s.draft, solo: s.solo, abandoned: !!s.abandoned })), cross_done: !!r.cross, accepted: r.accepted } : null,
+    round: r ? { n: r.n, status: r.status, slots: r.slots.map((s) => ({ id: s.id, direction: s.direction_id, prover_model: assignedModel(st, 'prover', s.id), briefing: s.briefing, draft: s.draft, solo: s.solo, abandoned: !!s.abandoned })), cross_done: !!r.cross, accepted: r.accepted } : null,
     rounds_used: st.rounds.length,
     max_rounds: st.config.max_rounds,
     calls_used: st.calls_used,
     budget_calls: st.config.budget_calls,
     calls_by_role: st.calls_by_role,
-    models: st.config.models,
+    priority: st.config.priority,
+    pins: st.config.pins,
+    single_model: st.config.single_model,
+    calls_by_model: st.calls_by_model,
     directions: st.directions,
     accepted_total: st.rounds.flatMap((x) => x.accepted),
     ledger: { verified: ledger.lemmas.filter((l) => l.status === 'verified').map((l) => ({ id: l.id, statement: l.statement })), pending: ledger.lemmas.filter((l) => l.status === 'pending').map((l) => l.id), excluded: ledger.excluded.map((e) => ({ id: e.id, claim: e.claim })) },
@@ -807,10 +811,11 @@ const OBJ = { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'objec
 const FRAG = { type: 'array', description: 'Steps or lemmas inside the draft that you confirmed correct even if the whole draft fails.', items: { anyOf: [{ type: 'string' }, { type: 'object', properties: { statement: { type: 'string' }, location: { type: 'string' } }, required: ['statement'] }] } };
 
 const TOOLS = {
-  cogentic_init: { fn: init, description: 'Orchestrator: create a Cogentic run for one problem. Returns run_dir, which every other tool and every agent brief needs.', schema: S({ workspace: { type: 'string', description: 'Absolute path of the workspace; the run lives in <workspace>/.cogentic/<run_id>/.' }, problem: { type: 'string', description: 'The full problem statement, verbatim from the user.' }, title: { type: 'string' }, max_rounds: { type: 'integer' }, max_provers: { type: 'integer', description: 'Maximum prover slots per round.' }, budget_calls: { type: 'integer', description: 'Budget of agent calls for the whole run (the paper reports O(100)-O(1000)).' }, mode: { type: 'string', enum: ['swarm', 'workflow'] }, preset: { type: 'string', enum: Object.keys(PRESETS), description: 'Role -> Gemini 4 model preset: balanced (default), faithful (all Argon high, as in the paper), economy, max.' }, models: { type: 'object', description: `Optional per-role overrides of the preset (Gemini 4 ids only). Roles: ${ROLES.join(', ')}; prover may be a list used in turn across slots.` } }, ['workspace', 'problem']) },
+  cogentic_init: { fn: init, description: 'Orchestrator: create a Cogentic run for one problem. Returns run_dir, which every other tool and every agent brief needs.', schema: S({ workspace: { type: 'string', description: 'Absolute path of the workspace; the run lives in <workspace>/.cogentic/<run_id>/.' }, problem: { type: 'string', description: 'The full problem statement, verbatim from the user.' }, title: { type: 'string' }, max_rounds: { type: 'integer' }, max_provers: { type: 'integer', description: 'Maximum prover slots per round.' }, budget_calls: { type: 'integer', description: 'Budget of agent calls for the whole run (the paper reports O(100)-O(1000)).' }, mode: { type: 'string', enum: ['swarm', 'workflow'] }, priority: { type: 'string', enum: PRIORITIES, description: 'How the orchestrator trades accuracy against speed and quota when it picks models (default balanced).' }, pins: { type: 'object', description: `Optional role -> model id the user insists on. Roles: ${ROLES.join(', ')}.` }, single_model: { type: 'string', description: 'Optional: one model for every agent, as in the paper.' } }, ['workspace', 'problem']) },
   cogentic_status: { fn: status, description: 'Anyone: the run\'s phase, current round, ledger summary, budget, file paths, and the next protocol step.', schema: S(RUN, ['run_dir']) },
   cogentic_list_runs: { fn: listRuns, description: 'List Cogentic runs in a workspace, newest first.', schema: S({ workspace: { type: 'string' } }, ['workspace']) },
-  cogentic_charge: { fn: charge, description: 'Orchestrator: count agent calls against the run\'s budget (call it once for every agent you start).', schema: S({ ...RUN, role: { type: 'string' }, calls: { type: 'integer' } }, ['run_dir', 'role']) },
+  cogentic_charge: { fn: charge, description: 'Orchestrator: record every agent you start: its role, the model you chose for it (any model the swarm lists), its assignment (slot id, r<n>, lemma id, ...) and why that model. Counts against the budget; honours the user\'s pins.', schema: S({ ...RUN, role: { type: 'string', enum: ROLES }, model: { type: 'string' }, assignment: { type: 'string' }, reason: { type: 'string' }, calls: { type: 'integer' } }, ['run_dir', 'role']) },
+  cogentic_models: { fn: models, description: 'Orchestrator: everything needed to choose a model: priority, pins, the catalog of model cards (advice), calls per model, and each model\'s outcomes in this run (drafts accepted/rejected, verifier misses).', schema: S(RUN, ['run_dir']) },
   cogentic_add_literature: { fn: addLiterature, description: 'Literature reviewer: save a survey note (definitions, theorems with exact statements and sources, related work, known barriers).', schema: S({ ...RUN, title: { type: 'string' }, content: { type: 'string' }, sources: { type: 'array', items: { type: 'string' } }, reviewer: { type: 'string' } }, ['run_dir', 'title', 'content']) },
   cogentic_open_round: { fn: openRound, description: 'Orchestrator: open the next round with its directions (a specific claim, a counterexample search, or repairing/finalizing a promising proof) and the number of prover slots for each. Reuse a direction by id.', schema: S({ ...RUN, directions: { type: 'array', items: { type: 'object', properties: { id: { type: 'string', description: 'Existing direction id to continue.' }, claim: { type: 'string', description: 'For a new direction: the precise statement to establish or refute.' }, kind: { type: 'string', enum: DIRECTION_KINDS }, provers: { type: 'integer' } } } }, note: { type: 'string' } }, ['run_dir', 'directions']) },
   cogentic_submit_briefing: { fn: submitBriefing, description: 'Summarizer: write the briefing for one prover slot: the most informative prior attempts (by path), what the verifiers objected to, relevant ledger lemmas and literature, and suggested next steps.', schema: S({ ...RUN, slot_id: { type: 'string' }, briefing: { type: 'string' } }, ['run_dir', 'slot_id', 'briefing']) },
@@ -837,4 +842,4 @@ function call(name, args) {
   return t.fn(args || {});
 }
 
-module.exports = { TOOLS, call, CogenticError, VERSION, PRESETS, ROLES };
+module.exports = { TOOLS, call, CogenticError, VERSION, ROLES };
